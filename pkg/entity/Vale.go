@@ -3,11 +3,12 @@ package entity
 import "time"
 
 type Vale struct {
-	Id       string
-	Valor    float64
-	Data     time.Time
-	Aprovado bool
-	Pago     bool
+	Id            int64
+	FuncionarioId int64
+	Valor         float64
+	Data          time.Time
+	Aprovado      bool
+	Pago          bool
 }
 
 func NewVale(valor float64, Data time.Time) *Vale {

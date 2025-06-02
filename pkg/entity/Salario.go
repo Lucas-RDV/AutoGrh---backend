@@ -3,7 +3,7 @@ package entity
 import "time"
 
 type Salario struct {
-	Id    string
+	Id    int64
 	Valor float64
 	Ano   time.Time
 }

@@ -1,10 +1,11 @@
 package entity
 
 type Usuario struct {
-	Id       string
+	Id       int64
 	Username string
 	Password string
 	IsAdmin  bool
+	Logs     []Log
 }
 
 func NewUsuario(username string, password string, isAdmin bool) *Usuario {
