@@ -66,3 +66,35 @@ func DeleteFalta(id int64) error {
 	_, err := DB.Exec(query, id)
 	return err
 }
+
+func ListFaltas() ([]entity.Falta, error) {
+	query := `SELECT faltaID, funcionarioID, quantidade, data FROM falta`
+
+	rows, err := DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao listar faltas: %w", err)
+	}
+	defer rows.Close()
+
+	var faltas []entity.Falta
+	for rows.Next() {
+		var f entity.Falta
+		var mesStr string
+
+		err := rows.Scan(&f.Id, &f.FuncionarioId, &f.Quantidade, &mesStr)
+		if err != nil {
+			log.Printf("erro ao ler falta: %v", err)
+			continue
+		}
+
+		parsed, err := time.Parse("2006-01-02", mesStr)
+		if err != nil {
+			log.Printf("erro ao converter data: %v", err)
+			continue
+		}
+		f.Mes = parsed
+
+		faltas = append(faltas, f)
+	}
+	return faltas, nil
+}

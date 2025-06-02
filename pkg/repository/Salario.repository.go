@@ -2,15 +2,17 @@ package repository
 
 import (
 	"AutoGRH/pkg/entity"
+	"database/sql"
 	"fmt"
+	"log"
+	"time"
 )
 
 // Cria um salário para um funcionário
-func CreateSalario(funcionarioID int64, s *entity.Salario) error {
-	query := `INSERT INTO salario (funcionarioID, valor, ano)
-              VALUES (?, ?, ?)`
+func CreateSalario(s *entity.Salario) error {
+	query := `INSERT INTO salario (funcionarioID, inicio, valor) VALUES (?, ?, ?)`
 
-	result, err := DB.Exec(query, funcionarioID, s.Valor, s.Ano)
+	result, err := DB.Exec(query, s.FuncionarioID, s.Inicio.Format("2006-01-02"), s.Valor)
 	if err != nil {
 		return fmt.Errorf("erro ao inserir salário: %w", err)
 	}
@@ -21,7 +23,7 @@ func CreateSalario(funcionarioID int64, s *entity.Salario) error {
 
 // Retorna todos os salários de um funcionário
 func GetSalariosByFuncionarioID(funcionarioID int64) ([]entity.Salario, error) {
-	query := `SELECT salarioID, valor, ano FROM salario WHERE funcionarioID = ? ORDER BY ano ASC`
+	query := `SELECT salarioID, funcionarioID, inicio, fim, valor FROM salario WHERE funcionarioID = ? ORDER BY inicio ASC`
 
 	rows, err := DB.Query(query, funcionarioID)
 	if err != nil {
@@ -32,10 +34,26 @@ func GetSalariosByFuncionarioID(funcionarioID int64) ([]entity.Salario, error) {
 	var salarios []entity.Salario
 	for rows.Next() {
 		var s entity.Salario
-		err := rows.Scan(&s.Id, &s.Valor, &s.Ano)
+		var inicioStr, fimStr sql.NullString
+		err := rows.Scan(&s.Id, &s.FuncionarioID, &inicioStr, &fimStr, &s.Valor)
 		if err != nil {
+			log.Printf("erro ao ler salário: %v", err)
 			continue
 		}
+
+		s.Inicio, err = time.Parse("2006-01-02", inicioStr.String)
+		if err != nil {
+			log.Printf("erro ao converter data de início: %v", err)
+			continue
+		}
+
+		if fimStr.Valid {
+			fimParsed, err := time.Parse("2006-01-02", fimStr.String)
+			if err == nil {
+				s.Fim = &fimParsed
+			}
+		}
+
 		salarios = append(salarios, s)
 	}
 	return salarios, nil
@@ -43,8 +61,14 @@ func GetSalariosByFuncionarioID(funcionarioID int64) ([]entity.Salario, error) {
 
 // Atualiza um salário
 func UpdateSalario(s *entity.Salario) error {
-	query := `UPDATE salario SET valor = ?, ano = ? WHERE salarioID = ?`
-	_, err := DB.Exec(query, s.Valor, s.Ano, s.Id)
+	query := `UPDATE salario SET valor = ?, inicio = ?, fim = ? WHERE salarioID = ?`
+	var fimStr interface{}
+	if s.Fim != nil {
+		fimStr = s.Fim.Format("2006-01-02")
+	} else {
+		fimStr = nil
+	}
+	_, err := DB.Exec(query, s.Valor, s.Inicio.Format("2006-01-02"), fimStr, s.Id)
 	return err
 }
 

@@ -3,14 +3,17 @@ package entity
 import "time"
 
 type Salario struct {
-	Id    int64
-	Valor float64
-	Ano   time.Time
+	Id            int64
+	FuncionarioID int64
+	Inicio        time.Time
+	Fim           *time.Time
+	Valor         float64
 }
 
-func newSalario(Valor float64, Ano time.Time) *Salario {
-	s := new(Salario)
-	s.Valor = Valor
-	s.Ano = Ano
-	return s
+func NewSalario(funcionarioID int64, inicio time.Time, valor float64) *Salario {
+	return &Salario{
+		FuncionarioID: funcionarioID,
+		Inicio:        inicio,
+		Valor:         valor,
+	}
 }

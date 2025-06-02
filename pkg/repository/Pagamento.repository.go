@@ -108,3 +108,39 @@ func ListPagamentos() ([]entity.Pagamento, error) {
 
 	return pagamentos, nil
 }
+
+// Buscar pagamentos de uma folha
+func GetPagamentosByFolhaID(folhaID int64) ([]entity.Pagamento, error) {
+	query := `SELECT p.pagamentoID, p.funcionarioID, p.folhaID, p.tipoID, t.tipo, p.valor, p.data
+              FROM pagamento p
+              JOIN tipo_pagamento t ON p.tipoID = t.tipoID
+              WHERE p.folhaID = ?`
+
+	rows, err := DB.Query(query, folhaID)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao buscar pagamentos por folha: %w", err)
+	}
+	defer rows.Close()
+
+	var pagamentos []entity.Pagamento
+	for rows.Next() {
+		var p entity.Pagamento
+		var dataStr string
+
+		err := rows.Scan(&p.Id, &p.FuncionarioId, &p.FolhaId, &p.TipoId, &p.Tipo, &p.Valor, &dataStr)
+		if err != nil {
+			log.Println("erro ao ler pagamento:", err)
+			continue
+		}
+
+		parsed, err := time.Parse("2006-01-02", dataStr)
+		if err != nil {
+			log.Println("erro ao converter data do pagamento:", err)
+			continue
+		}
+		p.Data = parsed
+
+		pagamentos = append(pagamentos, p)
+	}
+	return pagamentos, nil
+}

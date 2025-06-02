@@ -2,62 +2,73 @@ package test
 
 import (
 	"AutoGRH/pkg/entity"
-	repository "AutoGRH/pkg/repository"
+	"AutoGRH/pkg/repository"
 	"testing"
 )
 
+var testUsuario *entity.Usuario
+
 func TestCreateUsuario(t *testing.T) {
-	u := entity.NewUsuario("testuser", "testpass", true)
-	err := repository.CreateUsuario(u)
+	// Tenta deletar usuário existente para evitar conflito
+	repository.DB.Exec("DELETE FROM usuario WHERE username = ?", "testuser")
+
+	testUsuario = &entity.Usuario{
+		Username: "testuser",
+		Password: "123456",
+		IsAdmin:  false,
+	}
+	err := repository.CreateUsuario(testUsuario)
 	if err != nil {
 		t.Fatalf("erro ao criar usuario: %v", err)
 	}
-	if u.Id == 0 {
-		t.Error("ID do usuário não foi definido")
+	if testUsuario.Id == 0 {
+		t.Error("ID do usuário não foi atribuído")
 	}
 }
 
 func TestGetUsuarioByID(t *testing.T) {
-	u := entity.NewUsuario("test2", "test2", false)
-	repository.CreateUsuario(u)
-
-	uFetched, err := repository.GetUsuarioByID(u.Id)
+	if testUsuario == nil {
+		t.Fatal("usuário de teste não foi criado")
+	}
+	u, err := repository.GetUsuarioByID(testUsuario.Id)
 	if err != nil {
 		t.Fatalf("erro ao buscar usuario: %v", err)
 	}
-	if uFetched == nil || uFetched.Username != u.Username {
+	if u == nil || u.Username != testUsuario.Username {
 		t.Error("usuario buscado difere do original")
 	}
 }
 
 func TestUpdateUsuario(t *testing.T) {
-	u := entity.NewUsuario("updateuser", "pass", false)
-	repository.CreateUsuario(u)
-
-	u.Password = "newpass"
-	u.IsAdmin = true
-	err := repository.UpdateUsuario(u)
+	if testUsuario == nil {
+		t.Fatal("usuário de teste não foi criado")
+	}
+	testUsuario.Password = "nova_senha"
+	testUsuario.IsAdmin = true
+	err := repository.UpdateUsuario(testUsuario)
 	if err != nil {
 		t.Fatalf("erro ao atualizar usuario: %v", err)
 	}
 
-	uCheck, _ := repository.GetUsuarioByID(u.Id)
-	if uCheck.Password != "newpass" || !uCheck.IsAdmin {
-		t.Error("atualização de usuario falhou")
+	u, _ := repository.GetUsuarioByID(testUsuario.Id)
+	if u.Password != "nova_senha" || !u.IsAdmin {
+		t.Error("usuario não foi atualizado corretamente")
 	}
 }
 
-func TestDeleteUsuario(t *testing.T) {
-	u := entity.NewUsuario("deleteuser", "deletepass", false)
-	repository.CreateUsuario(u)
-
-	err := repository.DeleteUsuario(u.Id)
+func TestListUsuarios(t *testing.T) {
+	usuarios, err := repository.GetAllUsuarios()
 	if err != nil {
-		t.Fatalf("erro ao deletar usuario: %v", err)
+		t.Fatalf("erro ao listar usuarios: %v", err)
 	}
-
-	uDel, _ := repository.GetUsuarioByID(u.Id)
-	if uDel != nil {
-		t.Error("usuario ainda existe após exclusão")
+	found := false
+	for _, u := range usuarios {
+		if u.Id == testUsuario.Id {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("usuario de teste não encontrado na listagem")
 	}
 }

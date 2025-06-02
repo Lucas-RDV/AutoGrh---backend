@@ -5,13 +5,14 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 )
 
 // Cria uma nova folha de pagamento
 func CreateFolha(f *entity.FolhaPagamentos) error {
 	query := `INSERT INTO folha_pagamento (data) VALUES (?)`
 
-	result, err := DB.Exec(query, f.Data)
+	result, err := DB.Exec(query, f.Data.Format("2006-01-02"))
 	if err != nil {
 		return fmt.Errorf("erro ao criar folha: %w", err)
 	}
@@ -26,13 +27,20 @@ func GetFolhaByID(id int64) (*entity.FolhaPagamentos, error) {
 	row := DB.QueryRow(query, id)
 
 	var f entity.FolhaPagamentos
-	err := row.Scan(&f.Id, &f.Data)
+	var dataStr string
+	err := row.Scan(&f.Id, &dataStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("erro ao buscar folha: %w", err)
 	}
+
+	parsed, err := time.Parse("2006-01-02", dataStr)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao converter data: %w", err)
+	}
+	f.Data = parsed
 
 	// Buscar pagamentos relacionados
 	pagamentos, err := GetPagamentosByFolhaID(f.Id)
@@ -59,13 +67,20 @@ func ListFolhas() ([]*entity.FolhaPagamentos, error) {
 	var folhas []*entity.FolhaPagamentos
 	for rows.Next() {
 		var f entity.FolhaPagamentos
-		err := rows.Scan(&f.Id, &f.Data)
+		var dataStr string
+		err := rows.Scan(&f.Id, &dataStr)
 		if err != nil {
 			log.Println("erro ao ler folha:", err)
 			continue
 		}
 
-		// Buscar e somar pagamentos
+		parsed, err := time.Parse("2006-01-02", dataStr)
+		if err != nil {
+			log.Println("erro ao converter data da folha:", err)
+			continue
+		}
+		f.Data = parsed
+
 		pagamentos, err := GetPagamentosByFolhaID(f.Id)
 		if err == nil {
 			f.Pagamentos = pagamentos
@@ -77,30 +92,4 @@ func ListFolhas() ([]*entity.FolhaPagamentos, error) {
 		folhas = append(folhas, &f)
 	}
 	return folhas, nil
-}
-
-// Auxiliar: Buscar pagamentos de uma folha
-func GetPagamentosByFolhaID(folhaID int64) ([]entity.Pagamento, error) {
-	query := `SELECT p.pagamentoID, p.funcionarioID, p.folhaID, p.tipoID, t.tipo, p.valor, p.data
-              FROM pagamento p
-              JOIN tipo_pagamento t ON p.tipoID = t.tipoID
-              WHERE p.folhaID = ?`
-
-	rows, err := DB.Query(query, folhaID)
-	if err != nil {
-		return nil, fmt.Errorf("erro ao buscar pagamentos por folha: %w", err)
-	}
-	defer rows.Close()
-
-	var pagamentos []entity.Pagamento
-	for rows.Next() {
-		var p entity.Pagamento
-		err := rows.Scan(&p.Id, &p.FuncionarioId, &p.FolhaId, &p.TipoId, &p.Tipo, &p.Valor, &p.Data)
-		if err != nil {
-			log.Println("erro ao ler pagamento:", err)
-			continue
-		}
-		pagamentos = append(pagamentos, p)
-	}
-	return pagamentos, nil
 }

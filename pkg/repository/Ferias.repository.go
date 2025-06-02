@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 )
 
 // CreateFerias Cria um novo período de férias
@@ -80,9 +81,23 @@ func GetFeriasByFuncionarioID(funcionarioID int64) ([]*entity.Ferias, error) {
 	var feriasList []*entity.Ferias
 	for rows.Next() {
 		var f entity.Ferias
-		err := rows.Scan(&f.Id, &f.FuncionarioID, &f.Dias, &f.Inicio, &f.Vencimento, &f.Vencido, &f.Valor)
+		var inicioStr, vencimentoStr string
+
+		err := rows.Scan(&f.Id, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr, &f.Vencido, &f.Valor)
 		if err != nil {
 			log.Printf("erro ao ler ferias: %v", err)
+			continue
+		}
+
+		// Parse das datas
+		f.Inicio, err = time.Parse("2006-01-02", inicioStr)
+		if err != nil {
+			log.Printf("erro ao converter data de inicio: %v", err)
+			continue
+		}
+		f.Vencimento, err = time.Parse("2006-01-02", vencimentoStr)
+		if err != nil {
+			log.Printf("erro ao converter data de vencimento: %v", err)
 			continue
 		}
 
@@ -95,4 +110,40 @@ func GetFeriasByFuncionarioID(funcionarioID int64) ([]*entity.Ferias, error) {
 		feriasList = append(feriasList, &f)
 	}
 	return feriasList, nil
+}
+
+func ListFerias() ([]entity.Ferias, error) {
+	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor FROM ferias`
+
+	rows, err := DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao listar férias: %w", err)
+	}
+	defer rows.Close()
+
+	var lista []entity.Ferias
+	for rows.Next() {
+		var f entity.Ferias
+		var inicioStr, vencimentoStr string
+
+		err := rows.Scan(&f.Id, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr, &f.Vencido, &f.Valor)
+		if err != nil {
+			log.Printf("erro ao ler férias: %v", err)
+			continue
+		}
+
+		f.Inicio, err = time.Parse("2006-01-02", inicioStr)
+		if err != nil {
+			log.Printf("erro ao converter data inicio: %v", err)
+			continue
+		}
+		f.Vencimento, err = time.Parse("2006-01-02", vencimentoStr)
+		if err != nil {
+			log.Printf("erro ao converter data vencimento: %v", err)
+			continue
+		}
+
+		lista = append(lista, f)
+	}
+	return lista, nil
 }

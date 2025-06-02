@@ -125,7 +125,7 @@ func createTables() error {
             salarioID BIGINT AUTO_INCREMENT PRIMARY KEY,
             funcionarioID BIGINT,
             inicio DATE,
-            fim DATE,
+            fim DATE DEFAULT NULL,
             valor FLOAT,
             FOREIGN KEY (funcionarioID) REFERENCES funcionario(funcionarioID)
         );`,

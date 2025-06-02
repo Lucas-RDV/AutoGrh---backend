@@ -96,3 +96,43 @@ func TestDeleteFalta(t *testing.T) {
 		}
 	}
 }
+
+func TestListFaltas(t *testing.T) {
+	// Cria funcionário
+	funcionario := entity.NewFuncionario(
+		"Falta Teste", "123", "456", "789", "000", "Rua Teste", "1111", "2222", "Operador",
+		time.Now().AddDate(-20, 0, 0), time.Now(), 1500.0,
+	)
+	err := repository.CreateFuncionario(funcionario)
+	if err != nil {
+		t.Fatalf("erro ao criar funcionário: %v", err)
+	}
+
+	// Cria falta
+	f := &entity.Falta{
+		FuncionarioId: funcionario.Id,
+		Quantidade:    1,
+		Mes:           time.Now(),
+	}
+	err = repository.CreateFalta(f)
+	if err != nil {
+		t.Fatalf("erro ao criar falta: %v", err)
+	}
+
+	// Testa a listagem geral
+	faltas, err := repository.ListFaltas()
+	if err != nil {
+		t.Fatalf("erro ao listar faltas: %v", err)
+	}
+
+	found := false
+	for _, falta := range faltas {
+		if falta.Id == f.Id {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("falta de teste não encontrada na listagem geral")
+	}
+}

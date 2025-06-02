@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 )
 
 // CreateDescanso Cria um descanso vinculado a um período de férias
@@ -29,13 +30,18 @@ func GetDescansoByID(id int64) (*entity.Descanso, error) {
 	row := DB.QueryRow(query, id)
 
 	var d entity.Descanso
-	err := row.Scan(&d.Id, &d.FeriasID, &d.Inicio, &d.Fim, &d.Valor, &d.Pago, &d.Aprovado)
+	var inicioStr, fimStr string
+
+	err := row.Scan(&d.Id, &d.FeriasID, &inicioStr, &fimStr, &d.Valor, &d.Pago, &d.Aprovado)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("erro ao buscar descanso: %w", err)
 	}
+	d.Inicio, _ = time.Parse("2006-01-02", inicioStr)
+	d.Fim, _ = time.Parse("2006-01-02", fimStr)
+
 	return &d, nil
 }
 
@@ -53,11 +59,46 @@ func GetDescansosByFeriasID(feriasID int64) ([]*entity.Descanso, error) {
 	var descansos []*entity.Descanso
 	for rows.Next() {
 		var d entity.Descanso
-		err := rows.Scan(&d.Id, &d.FeriasID, &d.Inicio, &d.Fim, &d.Valor, &d.Pago, &d.Aprovado)
+		var inicioStr, fimStr string
+
+		err := rows.Scan(&d.Id, &d.FeriasID, &inicioStr, &fimStr, &d.Valor, &d.Pago, &d.Aprovado)
 		if err != nil {
 			log.Printf("erro ao ler descanso: %v", err)
 			continue
 		}
+
+		d.Inicio, _ = time.Parse("2006-01-02", inicioStr)
+		d.Fim, _ = time.Parse("2006-01-02", fimStr)
+
+		descansos = append(descansos, &d)
+	}
+	return descansos, nil
+}
+
+// ListDescansos Lista todos os descansos
+func ListDescansos() ([]*entity.Descanso, error) {
+	query := `SELECT descansoID, feriasID, inicio, fim, valor, pago, aprovado FROM descanso`
+
+	rows, err := DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao listar descansos: %w", err)
+	}
+	defer rows.Close()
+
+	var descansos []*entity.Descanso
+	for rows.Next() {
+		var d entity.Descanso
+		var inicioStr, fimStr string
+
+		err := rows.Scan(&d.Id, &d.FeriasID, &inicioStr, &fimStr, &d.Valor, &d.Pago, &d.Aprovado)
+		if err != nil {
+			log.Printf("erro ao ler descanso: %v", err)
+			continue
+		}
+
+		d.Inicio, _ = time.Parse("2006-01-02", inicioStr)
+		d.Fim, _ = time.Parse("2006-01-02", fimStr)
+
 		descansos = append(descansos, &d)
 	}
 	return descansos, nil

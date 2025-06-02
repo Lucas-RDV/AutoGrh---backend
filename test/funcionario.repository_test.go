@@ -81,3 +81,35 @@ func TestDeleteFuncionario(t *testing.T) {
 		t.Error("funcionario ainda existe após exclusão")
 	}
 }
+
+func TestListFuncionarios(t *testing.T) {
+	// Cria um funcionário de teste
+	f := entity.NewFuncionario(
+		"Funcionario Listagem", "999", "888", "777", "666", "Rua Listagem", "1111-1111", "2222-2222",
+		"Auxiliar", time.Now().AddDate(-25, 0, 0), time.Now(), 2000.00,
+	)
+
+	err := repository.CreateFuncionario(f)
+	if err != nil {
+		t.Fatalf("erro ao criar funcionário para listagem: %v", err)
+	}
+
+	// Executa a listagem
+	funcionarios, err := repository.ListFuncionarios()
+	if err != nil {
+		t.Fatalf("erro ao listar funcionários: %v", err)
+	}
+
+	// Verifica se o funcionário recém-criado está na lista
+	found := false
+	for _, funci := range funcionarios {
+		if funci.Id == f.Id {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Error("funcionário de teste não encontrado na listagem de funcionários")
+	}
+}
