@@ -1,7 +1,7 @@
-package repository
+package Repository
 
 import (
-	"AutoGRH/pkg/entity"
+	"AutoGRH/pkg/Entity"
 	"database/sql"
 	"fmt"
 	"log"
@@ -9,7 +9,7 @@ import (
 )
 
 // Cria um novo vale
-func CreateVale(v *entity.Vale) error {
+func CreateVale(v *Entity.Vale) error {
 	query := `INSERT INTO vale (funcionarioID, valor, data, aprovado, pago)
               VALUES (?, ?, ?, ?, ?)`
 
@@ -23,13 +23,13 @@ func CreateVale(v *entity.Vale) error {
 }
 
 // Busca um vale por ID
-func GetValeByID(id int64) (*entity.Vale, error) {
+func GetValeByID(id int64) (*Entity.Vale, error) {
 	query := `SELECT valeID, funcionarioID, valor, data, aprovado, pago
               FROM vale WHERE valeID = ?`
 
 	row := DB.QueryRow(query, id)
 
-	var v entity.Vale
+	var v Entity.Vale
 	var dataStr string
 	err := row.Scan(&v.Id, &v.FuncionarioId, &v.Valor, &dataStr, &v.Aprovado, &v.Pago)
 	if err != nil {
@@ -48,7 +48,7 @@ func GetValeByID(id int64) (*entity.Vale, error) {
 }
 
 // Lista todos os vales de um funcionário
-func GetValesByFuncionarioID(funcionarioId int64) ([]entity.Vale, error) {
+func GetValesByFuncionarioID(funcionarioId int64) ([]Entity.Vale, error) {
 	query := `SELECT valeID, funcionarioID, valor, data, aprovado, pago
               FROM vale WHERE funcionarioID = ?`
 
@@ -58,9 +58,9 @@ func GetValesByFuncionarioID(funcionarioId int64) ([]entity.Vale, error) {
 	}
 	defer rows.Close()
 
-	var vales []entity.Vale
+	var vales []Entity.Vale
 	for rows.Next() {
-		var v entity.Vale
+		var v Entity.Vale
 		var dataStr string
 		err := rows.Scan(&v.Id, &v.FuncionarioId, &v.Valor, &dataStr, &v.Aprovado, &v.Pago)
 		if err != nil {
@@ -80,7 +80,7 @@ func GetValesByFuncionarioID(funcionarioId int64) ([]entity.Vale, error) {
 }
 
 // Atualiza um vale
-func UpdateVale(v *entity.Vale) error {
+func UpdateVale(v *Entity.Vale) error {
 	query := `UPDATE vale SET valor = ?, data = ?, aprovado = ?, pago = ? WHERE valeID = ?`
 
 	_, err := DB.Exec(query, v.Valor, v.Data.Format("2006-01-02"), v.Aprovado, v.Pago, v.Id)

@@ -1,21 +1,21 @@
 package test
 
 import (
-	"AutoGRH/pkg/entity"
-	"AutoGRH/pkg/repository"
+	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/Repository"
 	"testing"
 	"time"
 )
 
 var feriasFuncionarioId int64
-var feriasEntity entity.Ferias
+var feriasEntity Entity.Ferias
 
 func createFeriasFuncionario(t *testing.T) {
-	funcionario := entity.NewFuncionario(
+	funcionario := Entity.NewFuncionario(
 		"Funcionario Férias", "12345678", "99999999900", "123456789", "111111", "Rua A", "1234-5678",
 		"9999-9999", "Analista", time.Now().AddDate(-25, 0, 0), time.Now(), 3000.00,
 	)
-	err := repository.CreateFuncionario(funcionario)
+	err := Repository.CreateFuncionario(funcionario)
 	if err != nil {
 		t.Fatalf("erro ao criar funcionário: %v", err)
 	}
@@ -28,7 +28,7 @@ func TestCreateFerias(t *testing.T) {
 	inicio := time.Now()
 	vencimento := inicio.AddDate(0, 1, 0)
 
-	f := &entity.Ferias{
+	f := &Entity.Ferias{
 		FuncionarioID: feriasFuncionarioId,
 		Dias:          30,
 		Inicio:        inicio,
@@ -37,7 +37,7 @@ func TestCreateFerias(t *testing.T) {
 		Valor:         2500.0,
 	}
 
-	err := repository.CreateFerias(f)
+	err := Repository.CreateFerias(f)
 	if err != nil {
 		t.Fatalf("erro ao criar férias: %v", err)
 	}
@@ -48,7 +48,7 @@ func TestCreateFerias(t *testing.T) {
 }
 
 func TestGetFeriasByFuncionarioID(t *testing.T) {
-	fList, err := repository.GetFeriasByFuncionarioID(feriasFuncionarioId)
+	fList, err := Repository.GetFeriasByFuncionarioID(feriasFuncionarioId)
 	if err != nil {
 		t.Fatalf("erro ao buscar férias por funcionário: %v", err)
 	}
@@ -70,12 +70,12 @@ func TestUpdateFerias(t *testing.T) {
 	feriasEntity.Valor = 2000.0
 	feriasEntity.Vencido = true
 
-	err := repository.UpdateFerias(&feriasEntity)
+	err := Repository.UpdateFerias(&feriasEntity)
 	if err != nil {
 		t.Fatalf("erro ao atualizar férias: %v", err)
 	}
 
-	list, _ := repository.GetFeriasByFuncionarioID(feriasFuncionarioId)
+	list, _ := Repository.GetFeriasByFuncionarioID(feriasFuncionarioId)
 	updated := false
 	for _, f := range list {
 		if f.Id == feriasEntity.Id && f.Dias == 20 && f.Vencido {
@@ -89,12 +89,12 @@ func TestUpdateFerias(t *testing.T) {
 }
 
 func TestDeleteFerias(t *testing.T) {
-	err := repository.DeleteFerias(feriasEntity.Id)
+	err := Repository.DeleteFerias(feriasEntity.Id)
 	if err != nil {
 		t.Fatalf("erro ao deletar férias: %v", err)
 	}
 
-	list, _ := repository.GetFeriasByFuncionarioID(feriasFuncionarioId)
+	list, _ := Repository.GetFeriasByFuncionarioID(feriasFuncionarioId)
 	for _, f := range list {
 		if f.Id == feriasEntity.Id {
 			t.Error("férias ainda existem após exclusão")
@@ -106,7 +106,7 @@ func TestListFerias(t *testing.T) {
 	// Cria férias temporárias para teste
 	inicio := time.Now()
 	vencimento := inicio.AddDate(0, 1, 0)
-	f := &entity.Ferias{
+	f := &Entity.Ferias{
 		FuncionarioID: feriasFuncionarioId,
 		Dias:          10,
 		Inicio:        inicio,
@@ -114,12 +114,12 @@ func TestListFerias(t *testing.T) {
 		Vencido:       false,
 		Valor:         1000.0,
 	}
-	err := repository.CreateFerias(f)
+	err := Repository.CreateFerias(f)
 	if err != nil {
 		t.Fatalf("erro ao criar férias para listagem: %v", err)
 	}
 
-	lista, err := repository.ListFerias()
+	lista, err := Repository.ListFerias()
 	if err != nil {
 		t.Fatalf("erro ao listar férias: %v", err)
 	}

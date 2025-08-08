@@ -1,17 +1,17 @@
 package test
 
 import (
-	"AutoGRH/pkg/entity"
-	"AutoGRH/pkg/repository"
+	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/Repository"
 	"testing"
 	"time"
 )
 
-var folhaCriada *entity.FolhaPagamentos
+var folhaCriada *Entity.FolhaPagamentos
 
 func TestCreateFolha(t *testing.T) {
-	folha := entity.NewFolhaPagamentos(time.Now())
-	err := repository.CreateFolha(folha)
+	folha := Entity.NewFolhaPagamentos(time.Now())
+	err := Repository.CreateFolha(folha)
 	if err != nil {
 		t.Fatalf("erro ao criar folha: %v", err)
 	}
@@ -26,7 +26,7 @@ func TestGetFolhaByID(t *testing.T) {
 		t.Fatal("Folha não criada previamente")
 	}
 
-	folha, err := repository.GetFolhaByID(folhaCriada.Id)
+	folha, err := Repository.GetFolhaByID(folhaCriada.Id)
 	if err != nil {
 		t.Fatalf("erro ao buscar folha por ID: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestGetFolhaByID(t *testing.T) {
 }
 
 func TestListFolhas(t *testing.T) {
-	folhas, err := repository.ListFolhas()
+	folhas, err := Repository.ListFolhas()
 	if err != nil {
 		t.Fatalf("erro ao listar folhas: %v", err)
 	}

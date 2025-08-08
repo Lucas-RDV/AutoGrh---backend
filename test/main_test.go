@@ -1,26 +1,30 @@
 package test
 
 import (
-	"AutoGRH/pkg/repository"
+	"AutoGRH/pkg/Repository"
+	"github.com/joho/godotenv"
 	"os"
 	"testing"
 )
 
 func TestMain(m *testing.M) {
-	repository.ConnectDB()
+
+	_ = godotenv.Load()
+
+	Repository.ConnectDB()
 
 	// Limpar tabelas antes dos testes
-	repository.DB.Exec("DELETE FROM falta")
-	repository.DB.Exec("DELETE FROM funcionario")
-	repository.DB.Exec("DELETE FROM usuario")
+	Repository.DB.Exec("DELETE FROM falta")
+	Repository.DB.Exec("DELETE FROM funcionario")
+	Repository.DB.Exec("DELETE FROM usuario")
 	// Adicione mais conforme necessário
 
 	code := m.Run()
 
 	// Limpar novamente, se quiser
-	repository.DB.Exec("DELETE FROM falta")
-	repository.DB.Exec("DELETE FROM funcionario")
-	repository.DB.Exec("DELETE FROM usuario")
+	Repository.DB.Exec("DELETE FROM falta")
+	Repository.DB.Exec("DELETE FROM funcionario")
+	Repository.DB.Exec("DELETE FROM usuario")
 
 	os.Exit(code)
 }

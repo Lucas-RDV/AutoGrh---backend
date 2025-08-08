@@ -1,14 +1,14 @@
-package repository
+package Repository
 
 import (
-	"AutoGRH/pkg/entity"
+	"AutoGRH/pkg/Entity"
 	"database/sql"
 	"fmt"
 	"log"
 )
 
 // CreateUsuario Cria um novo usuário no banco
-func CreateUsuario(u *entity.Usuario) error {
+func CreateUsuario(u *Entity.Usuario) error {
 	query := "INSERT INTO usuario (username, password, isAdmin) VALUES (?, ?, ?)"
 	result, err := DB.Exec(query, u.Username, u.Password, u.IsAdmin)
 	if err != nil {
@@ -24,11 +24,11 @@ func CreateUsuario(u *entity.Usuario) error {
 }
 
 // GetUsuarioByID Busca um usuário pelo ID
-func GetUsuarioByID(id int64) (*entity.Usuario, error) {
+func GetUsuarioByID(id int64) (*Entity.Usuario, error) {
 	query := "SELECT usuarioID, username, password, isAdmin FROM usuario WHERE usuarioID = ?"
 	row := DB.QueryRow(query, id)
 
-	var u entity.Usuario
+	var u Entity.Usuario
 	err := row.Scan(&u.Id, &u.Username, &u.Password, &u.IsAdmin)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -41,7 +41,7 @@ func GetUsuarioByID(id int64) (*entity.Usuario, error) {
 }
 
 // UpdateUsuario Atualiza um usuário existente
-func UpdateUsuario(u *entity.Usuario) error {
+func UpdateUsuario(u *Entity.Usuario) error {
 	query := "UPDATE usuario SET username = ?, password = ?, isAdmin = ? WHERE usuarioID = ?"
 	_, err := DB.Exec(query, u.Username, u.Password, u.IsAdmin, u.Id)
 	if err != nil {
@@ -61,7 +61,7 @@ func DeleteUsuario(id int64) error {
 }
 
 // GetAllUsuarios Lista todos os usuários
-func GetAllUsuarios() ([]*entity.Usuario, error) {
+func GetAllUsuarios() ([]*Entity.Usuario, error) {
 	query := "SELECT usuarioID, username, password, isAdmin FROM usuario"
 	rows, err := DB.Query(query)
 	if err != nil {
@@ -69,9 +69,9 @@ func GetAllUsuarios() ([]*entity.Usuario, error) {
 	}
 	defer rows.Close()
 
-	var usuarios []*entity.Usuario
+	var usuarios []*Entity.Usuario
 	for rows.Next() {
-		var u entity.Usuario
+		var u Entity.Usuario
 		err := rows.Scan(&u.Id, &u.Username, &u.Password, &u.IsAdmin)
 		if err != nil {
 			log.Printf("erro ao ler linha: %v", err)

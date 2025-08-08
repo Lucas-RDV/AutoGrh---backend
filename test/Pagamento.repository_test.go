@@ -1,21 +1,21 @@
 package test
 
 import (
-	"AutoGRH/pkg/entity"
-	"AutoGRH/pkg/repository"
+	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/Repository"
 	"testing"
 	"time"
 )
 
 var pagamentoFuncionarioId int64
-var pagamentoEntity entity.Pagamento
+var pagamentoEntity Entity.Pagamento
 
 func createPagamentoFuncionario(t *testing.T) {
-	funcionario := entity.NewFuncionario(
+	funcionario := Entity.NewFuncionario(
 		"Teste", "123", "456", "789", "000", "Rua Teste", "9999", "8888", "Cargo",
 		time.Now().AddDate(-30, 0, 0), time.Now(), 3000.0,
 	)
-	err := repository.CreateFuncionario(funcionario)
+	err := Repository.CreateFuncionario(funcionario)
 	if err != nil {
 		t.Fatalf("erro ao criar funcionario: %v", err)
 	}
@@ -24,15 +24,15 @@ func createPagamentoFuncionario(t *testing.T) {
 
 func GetTipoPagamentoID(tipo string) (int64, error) {
 	var id int64
-	row := repository.DB.QueryRow("SELECT tipoID FROM tipo_pagamento WHERE tipo = ?", tipo)
+	row := Repository.DB.QueryRow("SELECT tipoID FROM tipo_pagamento WHERE tipo = ?", tipo)
 	err := row.Scan(&id)
 	return id, err
 }
 
 func TestCreatePagamento(t *testing.T) {
 	createPagamentoFuncionario(t)
-	folha := entity.NewFolhaPagamentos(time.Now())
-	err := repository.CreateFolha(folha)
+	folha := Entity.NewFolhaPagamentos(time.Now())
+	err := Repository.CreateFolha(folha)
 	if err != nil {
 		t.Fatalf("erro ao criar folha: %v", err)
 	}
@@ -40,10 +40,10 @@ func TestCreatePagamento(t *testing.T) {
 	if err != nil {
 		t.Fatalf("erro ao obter tipo_pagamento: %v", err)
 	}
-	p := entity.NewPagamento(tipoId, time.Now(), 3000.00)
+	p := Entity.NewPagamento(tipoId, time.Now(), 3000.00)
 	p.FuncionarioId = pagamentoFuncionarioId
 	p.FolhaId = folha.Id
-	err = repository.CreatePagamento(p)
+	err = Repository.CreatePagamento(p)
 	if err != nil {
 		t.Fatalf("erro ao criar pagamento: %v", err)
 	}
@@ -55,18 +55,18 @@ func TestCreatePagamento(t *testing.T) {
 
 func TestGetPagamentosByFuncionarioID(t *testing.T) {
 	// Cria um funcionário de teste
-	funcionario := entity.NewFuncionario(
+	funcionario := Entity.NewFuncionario(
 		"Funcionario Pagamento", "12345678", "99999999900", "123456789", "111111", "Rua A", "1234-5678",
 		"9999-9999", "Analista", time.Now().AddDate(-25, 0, 0), time.Now(), 3000.00,
 	)
-	err := repository.CreateFuncionario(funcionario)
+	err := Repository.CreateFuncionario(funcionario)
 	if err != nil {
 		t.Fatalf("erro ao criar funcionario: %v", err)
 	}
 
 	// Cria uma folha de pagamento
-	folha := entity.NewFolhaPagamentos(time.Now())
-	err = repository.CreateFolha(folha)
+	folha := Entity.NewFolhaPagamentos(time.Now())
+	err = Repository.CreateFolha(folha)
 	if err != nil {
 		t.Fatalf("erro ao criar folha: %v", err)
 	}
@@ -78,17 +78,17 @@ func TestGetPagamentosByFuncionarioID(t *testing.T) {
 	}
 
 	// Cria um pagamento
-	p := entity.NewPagamento(tipoId, time.Now(), 3000.00)
+	p := Entity.NewPagamento(tipoId, time.Now(), 3000.00)
 	p.FuncionarioId = funcionario.Id
 	p.FolhaId = folha.Id
 
-	err = repository.CreatePagamento(p)
+	err = Repository.CreatePagamento(p)
 	if err != nil {
 		t.Fatalf("erro ao criar pagamento: %v", err)
 	}
 
 	// Busca os pagamentos do funcionário
-	pags, err := repository.GetPagamentosByFuncionarioID(funcionario.Id)
+	pags, err := Repository.GetPagamentosByFuncionarioID(funcionario.Id)
 	if err != nil {
 		t.Fatalf("erro ao buscar pagamentos: %v", err)
 	}
@@ -108,12 +108,12 @@ func TestGetPagamentosByFuncionarioID(t *testing.T) {
 
 func TestUpdatePagamento(t *testing.T) {
 	pagamentoEntity.Valor = 3500.00
-	err := repository.UpdatePagamento(&pagamentoEntity)
+	err := Repository.UpdatePagamento(&pagamentoEntity)
 	if err != nil {
 		t.Fatalf("erro ao atualizar pagamento: %v", err)
 	}
 
-	pags, _ := repository.GetPagamentosByFuncionarioID(pagamentoFuncionarioId)
+	pags, _ := Repository.GetPagamentosByFuncionarioID(pagamentoFuncionarioId)
 	updated := false
 	for _, p := range pags {
 		if p.Id == pagamentoEntity.Id && p.Valor == 3500.00 {
@@ -127,12 +127,12 @@ func TestUpdatePagamento(t *testing.T) {
 }
 
 func TestDeletePagamento(t *testing.T) {
-	err := repository.DeletePagamento(pagamentoEntity.Id)
+	err := Repository.DeletePagamento(pagamentoEntity.Id)
 	if err != nil {
 		t.Fatalf("erro ao deletar pagamento: %v", err)
 	}
 
-	pags, _ := repository.GetPagamentosByFuncionarioID(pagamentoFuncionarioId)
+	pags, _ := Repository.GetPagamentosByFuncionarioID(pagamentoFuncionarioId)
 	for _, p := range pags {
 		if p.Id == pagamentoEntity.Id {
 			t.Error("pagamento ainda existe após exclusão")
@@ -142,18 +142,18 @@ func TestDeletePagamento(t *testing.T) {
 
 func TestListPagamentos(t *testing.T) {
 	// Cria um funcionário
-	funcionario := entity.NewFuncionario(
+	funcionario := Entity.NewFuncionario(
 		"Funcionario List", "12345678", "88888888800", "222222222", "333333", "Rua B", "4444-5555",
 		"5555-6666", "Desenvolvedor", time.Now().AddDate(-28, 0, 0), time.Now(), 3200.00,
 	)
-	err := repository.CreateFuncionario(funcionario)
+	err := Repository.CreateFuncionario(funcionario)
 	if err != nil {
 		t.Fatalf("erro ao criar funcionario: %v", err)
 	}
 
 	// Cria folha
-	folha := entity.NewFolhaPagamentos(time.Now())
-	err = repository.CreateFolha(folha)
+	folha := Entity.NewFolhaPagamentos(time.Now())
+	err = Repository.CreateFolha(folha)
 	if err != nil {
 		t.Fatalf("erro ao criar folha: %v", err)
 	}
@@ -165,17 +165,17 @@ func TestListPagamentos(t *testing.T) {
 	}
 
 	// Cria pagamento
-	p := entity.NewPagamento(tipoId, time.Now(), 3200.00)
+	p := Entity.NewPagamento(tipoId, time.Now(), 3200.00)
 	p.FuncionarioId = funcionario.Id
 	p.FolhaId = folha.Id
 
-	err = repository.CreatePagamento(p)
+	err = Repository.CreatePagamento(p)
 	if err != nil {
 		t.Fatalf("erro ao criar pagamento: %v", err)
 	}
 
 	// Lista todos os pagamentos
-	pagamentos, err := repository.ListPagamentos()
+	pagamentos, err := Repository.ListPagamentos()
 	if err != nil {
 		t.Fatalf("erro ao listar pagamentos: %v", err)
 	}

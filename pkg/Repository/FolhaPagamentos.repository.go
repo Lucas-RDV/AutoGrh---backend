@@ -1,7 +1,7 @@
-package repository
+package Repository
 
 import (
-	"AutoGRH/pkg/entity"
+	"AutoGRH/pkg/Entity"
 	"database/sql"
 	"fmt"
 	"log"
@@ -9,7 +9,7 @@ import (
 )
 
 // Cria uma nova folha de pagamento
-func CreateFolha(f *entity.FolhaPagamentos) error {
+func CreateFolha(f *Entity.FolhaPagamentos) error {
 	query := `INSERT INTO folha_pagamento (data) VALUES (?)`
 
 	result, err := DB.Exec(query, f.Data.Format("2006-01-02"))
@@ -22,11 +22,11 @@ func CreateFolha(f *entity.FolhaPagamentos) error {
 }
 
 // Busca uma folha de pagamento e seus pagamentos
-func GetFolhaByID(id int64) (*entity.FolhaPagamentos, error) {
+func GetFolhaByID(id int64) (*Entity.FolhaPagamentos, error) {
 	query := `SELECT folhaID, data FROM folha_pagamento WHERE folhaID = ?`
 	row := DB.QueryRow(query, id)
 
-	var f entity.FolhaPagamentos
+	var f Entity.FolhaPagamentos
 	var dataStr string
 	err := row.Scan(&f.Id, &dataStr)
 	if err != nil {
@@ -55,7 +55,7 @@ func GetFolhaByID(id int64) (*entity.FolhaPagamentos, error) {
 }
 
 // Lista todas as folhas de pagamento
-func ListFolhas() ([]*entity.FolhaPagamentos, error) {
+func ListFolhas() ([]*Entity.FolhaPagamentos, error) {
 	query := `SELECT folhaID, data FROM folha_pagamento ORDER BY data DESC`
 
 	rows, err := DB.Query(query)
@@ -64,9 +64,9 @@ func ListFolhas() ([]*entity.FolhaPagamentos, error) {
 	}
 	defer rows.Close()
 
-	var folhas []*entity.FolhaPagamentos
+	var folhas []*Entity.FolhaPagamentos
 	for rows.Next() {
-		var f entity.FolhaPagamentos
+		var f Entity.FolhaPagamentos
 		var dataStr string
 		err := rows.Scan(&f.Id, &dataStr)
 		if err != nil {

@@ -1,7 +1,7 @@
-package repository
+package Repository
 
 import (
-	"AutoGRH/pkg/entity"
+	"AutoGRH/pkg/Entity"
 	"database/sql"
 	"fmt"
 	"log"
@@ -9,7 +9,7 @@ import (
 )
 
 // Cria um novo log no banco
-func CreateLog(l *entity.Log) error {
+func CreateLog(l *Entity.Log) error {
 	query := `INSERT INTO log (usuarioID, eventoID, data, action)
 			  VALUES (?, ?, ?, ?)`
 
@@ -26,11 +26,11 @@ func CreateLog(l *entity.Log) error {
 }
 
 // Busca um log por ID
-func GetLogByID(id int64) (*entity.Log, error) {
+func GetLogByID(id int64) (*Entity.Log, error) {
 	query := `SELECT logID, usuarioID, eventoID, data, action FROM log WHERE logID = ?`
 	row := DB.QueryRow(query, id)
 
-	var l entity.Log
+	var l Entity.Log
 	var dataStr string
 	err := row.Scan(&l.Id, &l.UsuarioId, &l.EventoId, &dataStr, &l.Message)
 	if err != nil {
@@ -49,7 +49,7 @@ func GetLogByID(id int64) (*entity.Log, error) {
 }
 
 // Lista todos os logs de um usuário
-func GetLogsByUsuarioID(usuarioID int64) ([]*entity.Log, error) {
+func GetLogsByUsuarioID(usuarioID int64) ([]*Entity.Log, error) {
 	query := `SELECT logID, usuarioID, eventoID, data, action FROM log WHERE usuarioID = ? ORDER BY data DESC`
 
 	rows, err := DB.Query(query, usuarioID)
@@ -58,9 +58,9 @@ func GetLogsByUsuarioID(usuarioID int64) ([]*entity.Log, error) {
 	}
 	defer rows.Close()
 
-	var logs []*entity.Log
+	var logs []*Entity.Log
 	for rows.Next() {
-		var l entity.Log
+		var l Entity.Log
 		var dataStr string
 		err := rows.Scan(&l.Id, &l.UsuarioId, &l.EventoId, &dataStr, &l.Message)
 		if err != nil {
@@ -80,7 +80,7 @@ func GetLogsByUsuarioID(usuarioID int64) ([]*entity.Log, error) {
 }
 
 // Lista todos os logs do sistema (com limite opcional)
-func ListAllLogs(limit int) ([]*entity.Log, error) {
+func ListAllLogs(limit int) ([]*Entity.Log, error) {
 	query := `SELECT logID, usuarioID, eventoID, data, action FROM log ORDER BY data DESC LIMIT ?`
 
 	rows, err := DB.Query(query, limit)
@@ -89,9 +89,9 @@ func ListAllLogs(limit int) ([]*entity.Log, error) {
 	}
 	defer rows.Close()
 
-	var logs []*entity.Log
+	var logs []*Entity.Log
 	for rows.Next() {
-		var l entity.Log
+		var l Entity.Log
 		var dataStr string
 		err := rows.Scan(&l.Id, &l.UsuarioId, &l.EventoId, &dataStr, &l.Message)
 		if err != nil {

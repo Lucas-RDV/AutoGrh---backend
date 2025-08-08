@@ -1,14 +1,14 @@
-package repository
+package Repository
 
 import (
-	"AutoGRH/pkg/entity"
+	"AutoGRH/pkg/Entity"
 	"fmt"
 	"log"
 	"time"
 )
 
 // Cria um novo pagamento vinculado a funcionário, tipo e folha (opcional)
-func CreatePagamento(p *entity.Pagamento) error {
+func CreatePagamento(p *Entity.Pagamento) error {
 	query := `INSERT INTO pagamento (funcionarioID, folhaID, tipoID, valor, data)
               VALUES (?, ?, ?, ?, ?)`
 
@@ -22,7 +22,7 @@ func CreatePagamento(p *entity.Pagamento) error {
 }
 
 // Busca pagamentos por funcionário
-func GetPagamentosByFuncionarioID(funcionarioID int64) ([]entity.Pagamento, error) {
+func GetPagamentosByFuncionarioID(funcionarioID int64) ([]Entity.Pagamento, error) {
 	query := `SELECT pagamentoID, funcionarioID, folhaID, tipoID, valor, data
 			  FROM pagamento
 			  WHERE funcionarioID = ?
@@ -34,9 +34,9 @@ func GetPagamentosByFuncionarioID(funcionarioID int64) ([]entity.Pagamento, erro
 	}
 	defer rows.Close()
 
-	var pagamentos []entity.Pagamento
+	var pagamentos []Entity.Pagamento
 	for rows.Next() {
-		var p entity.Pagamento
+		var p Entity.Pagamento
 		var dataStr string
 
 		err := rows.Scan(&p.Id, &p.FuncionarioId, &p.FolhaId, &p.TipoId, &p.Valor, &dataStr)
@@ -57,7 +57,7 @@ func GetPagamentosByFuncionarioID(funcionarioID int64) ([]entity.Pagamento, erro
 }
 
 // Atualiza um pagamento
-func UpdatePagamento(p *entity.Pagamento) error {
+func UpdatePagamento(p *Entity.Pagamento) error {
 	query := `UPDATE pagamento SET folhaID = ?, tipoID = ?, valor = ?, data = ?
               WHERE pagamentoID = ?`
 
@@ -73,7 +73,7 @@ func DeletePagamento(id int64) error {
 }
 
 // ListPagamentos retorna todos os pagamentos registrados no sistema
-func ListPagamentos() ([]entity.Pagamento, error) {
+func ListPagamentos() ([]Entity.Pagamento, error) {
 	query := `SELECT p.pagamentoID, p.funcionarioID, p.folhaID, p.tipoID, t.tipo, p.data, p.valor
               FROM pagamento p
               JOIN tipo_pagamento t ON p.tipoID = t.tipoID
@@ -85,9 +85,9 @@ func ListPagamentos() ([]entity.Pagamento, error) {
 	}
 	defer rows.Close()
 
-	var pagamentos []entity.Pagamento
+	var pagamentos []Entity.Pagamento
 	for rows.Next() {
-		var p entity.Pagamento
+		var p Entity.Pagamento
 		var dataStr string
 
 		err := rows.Scan(&p.Id, &p.FuncionarioId, &p.FolhaId, &p.TipoId, &p.Tipo, &dataStr, &p.Valor)
@@ -110,7 +110,7 @@ func ListPagamentos() ([]entity.Pagamento, error) {
 }
 
 // Buscar pagamentos de uma folha
-func GetPagamentosByFolhaID(folhaID int64) ([]entity.Pagamento, error) {
+func GetPagamentosByFolhaID(folhaID int64) ([]Entity.Pagamento, error) {
 	query := `SELECT p.pagamentoID, p.funcionarioID, p.folhaID, p.tipoID, t.tipo, p.valor, p.data
               FROM pagamento p
               JOIN tipo_pagamento t ON p.tipoID = t.tipoID
@@ -122,9 +122,9 @@ func GetPagamentosByFolhaID(folhaID int64) ([]entity.Pagamento, error) {
 	}
 	defer rows.Close()
 
-	var pagamentos []entity.Pagamento
+	var pagamentos []Entity.Pagamento
 	for rows.Next() {
-		var p entity.Pagamento
+		var p Entity.Pagamento
 		var dataStr string
 
 		err := rows.Scan(&p.Id, &p.FuncionarioId, &p.FolhaId, &p.TipoId, &p.Tipo, &p.Valor, &dataStr)

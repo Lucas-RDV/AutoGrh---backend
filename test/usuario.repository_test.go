@@ -1,23 +1,23 @@
 package test
 
 import (
-	"AutoGRH/pkg/entity"
-	"AutoGRH/pkg/repository"
+	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/Repository"
 	"testing"
 )
 
-var testUsuario *entity.Usuario
+var testUsuario *Entity.Usuario
 
 func TestCreateUsuario(t *testing.T) {
 	// Tenta deletar usuário existente para evitar conflito
-	repository.DB.Exec("DELETE FROM usuario WHERE username = ?", "testuser")
+	Repository.DB.Exec("DELETE FROM usuario WHERE username = ?", "testuser")
 
-	testUsuario = &entity.Usuario{
+	testUsuario = &Entity.Usuario{
 		Username: "testuser",
 		Password: "123456",
 		IsAdmin:  false,
 	}
-	err := repository.CreateUsuario(testUsuario)
+	err := Repository.CreateUsuario(testUsuario)
 	if err != nil {
 		t.Fatalf("erro ao criar usuario: %v", err)
 	}
@@ -30,7 +30,7 @@ func TestGetUsuarioByID(t *testing.T) {
 	if testUsuario == nil {
 		t.Fatal("usuário de teste não foi criado")
 	}
-	u, err := repository.GetUsuarioByID(testUsuario.Id)
+	u, err := Repository.GetUsuarioByID(testUsuario.Id)
 	if err != nil {
 		t.Fatalf("erro ao buscar usuario: %v", err)
 	}
@@ -45,19 +45,19 @@ func TestUpdateUsuario(t *testing.T) {
 	}
 	testUsuario.Password = "nova_senha"
 	testUsuario.IsAdmin = true
-	err := repository.UpdateUsuario(testUsuario)
+	err := Repository.UpdateUsuario(testUsuario)
 	if err != nil {
 		t.Fatalf("erro ao atualizar usuario: %v", err)
 	}
 
-	u, _ := repository.GetUsuarioByID(testUsuario.Id)
+	u, _ := Repository.GetUsuarioByID(testUsuario.Id)
 	if u.Password != "nova_senha" || !u.IsAdmin {
 		t.Error("usuario não foi atualizado corretamente")
 	}
 }
 
 func TestListUsuarios(t *testing.T) {
-	usuarios, err := repository.GetAllUsuarios()
+	usuarios, err := Repository.GetAllUsuarios()
 	if err != nil {
 		t.Fatalf("erro ao listar usuarios: %v", err)
 	}

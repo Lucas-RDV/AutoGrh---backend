@@ -1,15 +1,16 @@
-package repository
+package Repository
 
 import (
-	"AutoGRH/pkg/entity"
+	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/utils/DateStringToTime"
+	"AutoGRH/pkg/utils/NullTimeToPtr"
+	"AutoGRH/pkg/utils/PtrToNullTime"
 	"database/sql"
 	"fmt"
-	"log"
-	"time"
 )
 
 // CreateFuncionario cria um novo funcionário no banco
-func CreateFuncionario(f *entity.Funcionario) error {
+func CreateFuncionario(f *Entity.Funcionario) error {
 	query := `INSERT INTO funcionario (
 		nome, rg, cpf, pis, ctpf, endereco, contato, contatoEmergencia,
 		nascimento, admissao, demissao, cargo, salarioInicial, feriasDisponiveis)
@@ -17,33 +18,34 @@ func CreateFuncionario(f *entity.Funcionario) error {
 
 	result, err := DB.Exec(query,
 		f.Nome, f.RG, f.CPF, f.PIS, f.CTPF, f.Endereco, f.Contato, f.ContatoEmergencia,
-		f.Nascimento, f.Admissao, f.Demissao, f.Cargo, f.SalarioInicial, f.FeriasDisponiveis,
+		f.Nascimento, f.Admissao, PtrToNullTime.PtrToNullTime(f.Demissao), f.Cargo, f.SalarioInicial, f.FeriasDisponiveis,
 	)
 	if err != nil {
 		return fmt.Errorf("erro ao inserir funcionário: %w", err)
 	}
 
 	id, err := result.LastInsertId()
-	if err == nil {
-		f.Id = id
+	if err != nil {
+		return fmt.Errorf("erro ao obter ID do novo funcionário: %w", err)
 	}
-	return err
+	f.ID = id
+	return nil
 }
 
 // GetFuncionarioByID busca um funcionário pelo ID com todos os relacionamentos
-func GetFuncionarioByID(id int64) (*entity.Funcionario, error) {
+func GetFuncionarioByID(id int64) (*Entity.Funcionario, error) {
 	query := `SELECT funcionarioID, nome, rg, cpf, pis, ctpf, endereco, contato,
 		contatoEmergencia, nascimento, admissao, demissao, cargo, salarioInicial, feriasDisponiveis
 		FROM funcionario WHERE funcionarioID = ?`
 
 	row := DB.QueryRow(query, id)
 
-	var f entity.Funcionario
+	var f Entity.Funcionario
 	var nascimentoStr, admissaoStr string
 	var demissao sql.NullTime
 
 	err := row.Scan(
-		&f.Id, &f.Nome, &f.RG, &f.CPF, &f.PIS, &f.CTPF, &f.Endereco, &f.Contato,
+		&f.ID, &f.Nome, &f.RG, &f.CPF, &f.PIS, &f.CTPF, &f.Endereco, &f.Contato,
 		&f.ContatoEmergencia, &nascimentoStr, &admissaoStr, &demissao,
 		&f.Cargo, &f.SalarioInicial, &f.FeriasDisponiveis,
 	)
@@ -54,80 +56,91 @@ func GetFuncionarioByID(id int64) (*entity.Funcionario, error) {
 		return nil, fmt.Errorf("erro ao buscar funcionário: %w", err)
 	}
 
-	// Converte strings para time.Time
-	f.Nascimento, err = time.Parse("2006-01-02", nascimentoStr)
+	f.Nascimento, err = DateStringToTime.DateStringToTime(nascimentoStr)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao converter nascimento: %w", err)
 	}
-	f.Admissao, err = time.Parse("2006-01-02", admissaoStr)
+	f.Admissao, err = DateStringToTime.DateStringToTime(admissaoStr)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao converter admissão: %w", err)
 	}
+	f.Demissao = NullTimeToPtr.NullTimeToPtr(demissao)
 
-	// Trata demissão (pode ser nula)
-	if demissao.Valid {
-		f.Demissao = &demissao.Time
-	} else {
-		f.Demissao = nil
-	}
-
-	// Carrega os relacionamentos compostos
-	if ferias, err := GetFeriasByFuncionarioID(f.Id); err == nil {
-		for _, fr := range ferias {
-			f.Ferias = append(f.Ferias, *fr)
-		}
-	}
-	if salarios, err := GetSalariosByFuncionarioID(f.Id); err == nil {
-		f.Salarios = salarios
-	}
-	if documentos, err := GetDocumentosByFuncionarioID(f.Id); err == nil {
-		f.Documentos = documentos
-	}
-	if faltas, err := GetFaltasByFuncionarioID(f.Id); err == nil {
-		f.Faltas = faltas
-	}
-	if pagamentos, err := GetPagamentosByFuncionarioID(f.Id); err == nil {
-		f.Pagamentos = pagamentos
-	}
-	if vales, err := GetValesByFuncionarioID(f.Id); err == nil {
-		f.Vales = vales
+	err = carregarRelacionamentos(&f)
+	if err != nil {
+		return nil, err
 	}
 
 	return &f, nil
 }
 
+func carregarRelacionamentos(f *Entity.Funcionario) error {
+	if ferias, err := GetFeriasByFuncionarioID(f.ID); err == nil {
+		for _, fr := range ferias {
+			f.Ferias = append(f.Ferias, *fr)
+		}
+	} else {
+		return fmt.Errorf("erro ao carregar férias: %w", err)
+	}
+	if salarios, err := GetSalariosByFuncionarioID(f.ID); err == nil {
+		f.Salarios = salarios
+	} else {
+		return fmt.Errorf("erro ao carregar salários: %w", err)
+	}
+	if documentos, err := GetDocumentosByFuncionarioID(f.ID); err == nil {
+		f.Documentos = documentos
+	} else {
+		return fmt.Errorf("erro ao carregar documentos: %w", err)
+	}
+	if faltas, err := GetFaltasByFuncionarioID(f.ID); err == nil {
+		f.Faltas = faltas
+	} else {
+		return fmt.Errorf("erro ao carregar faltas: %w", err)
+	}
+	if pagamentos, err := GetPagamentosByFuncionarioID(f.ID); err == nil {
+		f.Pagamentos = pagamentos
+	} else {
+		return fmt.Errorf("erro ao carregar pagamentos: %w", err)
+	}
+	if vales, err := GetValesByFuncionarioID(f.ID); err == nil {
+		f.Vales = vales
+	} else {
+		return fmt.Errorf("erro ao carregar vales: %w", err)
+	}
+	return nil
+}
+
 // UpdateFuncionario atualiza os dados de um funcionário
-func UpdateFuncionario(f *entity.Funcionario) error {
+func UpdateFuncionario(f *Entity.Funcionario) error {
 	query := `UPDATE funcionario SET
 		nome = ?, rg = ?, cpf = ?, pis = ?, ctpf = ?, endereco = ?, contato = ?,
 		contatoEmergencia = ?, nascimento = ?, admissao = ?, demissao = ?,
 		cargo = ?, salarioInicial = ?, feriasDisponiveis = ?
 		WHERE funcionarioID = ?`
 
-	var demissao sql.NullTime
-	if f.Demissao != nil {
-		demissao = sql.NullTime{Time: *f.Demissao, Valid: true}
-	} else {
-		demissao = sql.NullTime{Valid: false}
-	}
-
 	_, err := DB.Exec(query,
 		f.Nome, f.RG, f.CPF, f.PIS, f.CTPF, f.Endereco, f.Contato, f.ContatoEmergencia,
-		f.Nascimento, f.Admissao, demissao, f.Cargo, f.SalarioInicial, f.FeriasDisponiveis,
-		f.Id,
+		f.Nascimento, f.Admissao, PtrToNullTime.PtrToNullTime(f.Demissao), f.Cargo, f.SalarioInicial, f.FeriasDisponiveis,
+		f.ID,
 	)
-	return err
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar funcionário: %w", err)
+	}
+	return nil
 }
 
 // DeleteFuncionario remove um funcionário do banco
 func DeleteFuncionario(id int64) error {
 	query := `DELETE FROM funcionario WHERE funcionarioID = ?`
 	_, err := DB.Exec(query, id)
-	return err
+	if err != nil {
+		return fmt.Errorf("erro ao deletar funcionário: %w", err)
+	}
+	return nil
 }
 
 // ListFuncionarios retorna uma lista leve de funcionários
-func ListFuncionarios() ([]*entity.Funcionario, error) {
+func ListFuncionarios() ([]*Entity.Funcionario, error) {
 	query := `SELECT funcionarioID, nome FROM funcionario`
 
 	rows, err := DB.Query(query)
@@ -136,13 +149,12 @@ func ListFuncionarios() ([]*entity.Funcionario, error) {
 	}
 	defer rows.Close()
 
-	var lista []*entity.Funcionario
+	var lista []*Entity.Funcionario
 	for rows.Next() {
-		var f entity.Funcionario
-		err := rows.Scan(&f.Id, &f.Nome)
+		var f Entity.Funcionario
+		err := rows.Scan(&f.ID, &f.Nome)
 		if err != nil {
-			log.Println("erro ao ler funcionário:", err)
-			continue
+			return nil, fmt.Errorf("erro ao ler funcionário: %w", err)
 		}
 		lista = append(lista, &f)
 	}

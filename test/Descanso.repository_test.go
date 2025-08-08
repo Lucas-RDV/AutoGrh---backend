@@ -1,18 +1,18 @@
 package test
 
 import (
-	"AutoGRH/pkg/entity"
-	"AutoGRH/pkg/repository"
+	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/Repository"
 	"testing"
 	"time"
 )
 
 var descansoID int64
-var descansoEntity *entity.Descanso
+var descansoEntity *Entity.Descanso
 
-func createTestDescanso(t *testing.T) *entity.Descanso {
+func createTestDescanso(t *testing.T) *Entity.Descanso {
 	// Criação de férias para o descanso
-	f := &entity.Ferias{
+	f := &Entity.Ferias{
 		FuncionarioID: 1,
 		Dias:          30,
 		Inicio:        time.Now(),
@@ -20,12 +20,12 @@ func createTestDescanso(t *testing.T) *entity.Descanso {
 		Vencido:       false,
 		Valor:         2000.0,
 	}
-	err := repository.CreateFerias(f)
+	err := Repository.CreateFerias(f)
 	if err != nil {
 		t.Fatalf("erro ao criar ferias: %v", err)
 	}
 
-	d := &entity.Descanso{
+	d := &Entity.Descanso{
 		FeriasID: f.Id,
 		Inicio:   time.Now(),
 		Fim:      time.Now().AddDate(0, 0, 5),
@@ -34,7 +34,7 @@ func createTestDescanso(t *testing.T) *entity.Descanso {
 		Aprovado: false,
 	}
 
-	err = repository.CreateDescanso(d)
+	err = Repository.CreateDescanso(d)
 	if err != nil {
 		t.Fatalf("erro ao criar descanso: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestCreateDescanso(t *testing.T) {
 
 func TestGetDescansoByID(t *testing.T) {
 	createTestDescanso(t)
-	d, err := repository.GetDescansoByID(descansoID)
+	d, err := Repository.GetDescansoByID(descansoID)
 	if err != nil {
 		t.Fatalf("erro ao buscar descanso: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestGetDescansoByID(t *testing.T) {
 
 func TestGetDescansosByFeriasID(t *testing.T) {
 	d := createTestDescanso(t)
-	descansos, err := repository.GetDescansosByFeriasID(d.FeriasID)
+	descansos, err := Repository.GetDescansosByFeriasID(d.FeriasID)
 	if err != nil {
 		t.Fatalf("erro ao buscar descansos por ferias: %v", err)
 	}
@@ -82,12 +82,12 @@ func TestGetDescansosByFeriasID(t *testing.T) {
 func TestUpdateDescanso(t *testing.T) {
 	d := createTestDescanso(t)
 	d.Valor = 999.0
-	err := repository.UpdateDescanso(d)
+	err := Repository.UpdateDescanso(d)
 	if err != nil {
 		t.Fatalf("erro ao atualizar descanso: %v", err)
 	}
 
-	dAtualizado, _ := repository.GetDescansoByID(d.Id)
+	dAtualizado, _ := Repository.GetDescansoByID(d.Id)
 	if dAtualizado.Valor != 999.0 {
 		t.Error("valor do descanso não foi atualizado corretamente")
 	}
@@ -95,12 +95,12 @@ func TestUpdateDescanso(t *testing.T) {
 
 func TestDeleteDescanso(t *testing.T) {
 	d := createTestDescanso(t)
-	err := repository.DeleteDescanso(d.Id)
+	err := Repository.DeleteDescanso(d.Id)
 	if err != nil {
 		t.Fatalf("erro ao deletar descanso: %v", err)
 	}
 
-	dExcluido, _ := repository.GetDescansoByID(d.Id)
+	dExcluido, _ := Repository.GetDescansoByID(d.Id)
 	if dExcluido != nil {
 		t.Error("descanso ainda existe após exclusão")
 	}
@@ -108,7 +108,7 @@ func TestDeleteDescanso(t *testing.T) {
 
 func TestListDescansos(t *testing.T) {
 	createTestDescanso(t)
-	descansos, err := repository.ListDescansos()
+	descansos, err := Repository.ListDescansos()
 	if err != nil {
 		t.Fatalf("erro ao listar descansos: %v", err)
 	}

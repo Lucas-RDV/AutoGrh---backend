@@ -1,14 +1,14 @@
-package repository
+package Repository
 
 import (
-	"AutoGRH/pkg/entity"
+	"AutoGRH/pkg/Entity"
 	"fmt"
 	"log"
 	"time"
 )
 
 // Cria uma falta
-func CreateFalta(f *entity.Falta) error {
+func CreateFalta(f *Entity.Falta) error {
 	query := `INSERT INTO falta (funcionarioID, quantidade, data) VALUES (?, ?, ?)`
 
 	result, err := DB.Exec(query, f.FuncionarioId, f.Quantidade, f.Mes)
@@ -21,7 +21,7 @@ func CreateFalta(f *entity.Falta) error {
 }
 
 // Busca todas as faltas de um funcionário
-func GetFaltasByFuncionarioID(funcionarioId int64) ([]entity.Falta, error) {
+func GetFaltasByFuncionarioID(funcionarioId int64) ([]Entity.Falta, error) {
 	query := `SELECT faltaID, funcionarioID, quantidade, data FROM falta WHERE funcionarioID = ?`
 
 	rows, err := DB.Query(query, funcionarioId)
@@ -30,9 +30,9 @@ func GetFaltasByFuncionarioID(funcionarioId int64) ([]entity.Falta, error) {
 	}
 	defer rows.Close()
 
-	var faltas []entity.Falta
+	var faltas []Entity.Falta
 	for rows.Next() {
-		var f entity.Falta
+		var f Entity.Falta
 		var mesStr string
 
 		err := rows.Scan(&f.Id, &f.FuncionarioId, &f.Quantidade, &mesStr)
@@ -54,7 +54,7 @@ func GetFaltasByFuncionarioID(funcionarioId int64) ([]entity.Falta, error) {
 }
 
 // Atualiza uma falta
-func UpdateFalta(f *entity.Falta) error {
+func UpdateFalta(f *Entity.Falta) error {
 	query := `UPDATE falta SET quantidade = ?, data = ? WHERE faltaID = ?`
 	_, err := DB.Exec(query, f.Quantidade, f.Mes, f.Id)
 	return err
@@ -67,7 +67,7 @@ func DeleteFalta(id int64) error {
 	return err
 }
 
-func ListFaltas() ([]entity.Falta, error) {
+func ListFaltas() ([]Entity.Falta, error) {
 	query := `SELECT faltaID, funcionarioID, quantidade, data FROM falta`
 
 	rows, err := DB.Query(query)
@@ -76,9 +76,9 @@ func ListFaltas() ([]entity.Falta, error) {
 	}
 	defer rows.Close()
 
-	var faltas []entity.Falta
+	var faltas []Entity.Falta
 	for rows.Next() {
-		var f entity.Falta
+		var f Entity.Falta
 		var mesStr string
 
 		err := rows.Scan(&f.Id, &f.FuncionarioId, &f.Quantidade, &mesStr)

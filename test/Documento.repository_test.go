@@ -1,21 +1,21 @@
 package test
 
 import (
-	"AutoGRH/pkg/entity"
-	"AutoGRH/pkg/repository"
+	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/Repository"
 	"testing"
 	"time"
 )
 
 var documentoFuncionarioID int64
-var documentoCriado entity.Documento
+var documentoCriado Entity.Documento
 
 func createDocumentoFuncionario(t *testing.T) {
-	funcionario := entity.NewFuncionario(
+	funcionario := Entity.NewFuncionario(
 		"Funcionario Documento", "12345678", "99999999900", "123456789", "111111", "Rua A", "1234-5678",
 		"9999-9999", "Analista", fakeDate(25), now(), 3000.00,
 	)
-	err := repository.CreateFuncionario(funcionario)
+	err := Repository.CreateFuncionario(funcionario)
 	if err != nil {
 		t.Fatalf("erro ao criar funcionario: %v", err)
 	}
@@ -24,11 +24,11 @@ func createDocumentoFuncionario(t *testing.T) {
 
 func TestCreateDocumento(t *testing.T) {
 	createDocumentoFuncionario(t)
-	doc := &entity.Documento{
+	doc := &Entity.Documento{
 		FuncionarioId: documentoFuncionarioID,
 		Doc:           []byte("RG escaneado"),
 	}
-	err := repository.CreateDocumento(doc)
+	err := Repository.CreateDocumento(doc)
 	if err != nil {
 		t.Fatalf("erro ao criar documento: %v", err)
 	}
@@ -39,7 +39,7 @@ func TestCreateDocumento(t *testing.T) {
 }
 
 func TestGetDocumentosByFuncionarioID(t *testing.T) {
-	docs, err := repository.GetDocumentosByFuncionarioID(documentoFuncionarioID)
+	docs, err := Repository.GetDocumentosByFuncionarioID(documentoFuncionarioID)
 	if err != nil {
 		t.Fatalf("erro ao buscar documentos: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestGetDocumentosByFuncionarioID(t *testing.T) {
 }
 
 func TestListDocumentos(t *testing.T) {
-	docs, err := repository.ListDocumentos()
+	docs, err := Repository.ListDocumentos()
 	if err != nil {
 		t.Fatalf("erro ao listar documentos: %v", err)
 	}
@@ -75,11 +75,11 @@ func TestListDocumentos(t *testing.T) {
 }
 
 func TestDeleteDocumento(t *testing.T) {
-	err := repository.DeleteDocumento(documentoCriado.Id)
+	err := Repository.DeleteDocumento(documentoCriado.Id)
 	if err != nil {
 		t.Fatalf("erro ao deletar documento: %v", err)
 	}
-	docs, err := repository.GetDocumentosByFuncionarioID(documentoFuncionarioID)
+	docs, err := Repository.GetDocumentosByFuncionarioID(documentoFuncionarioID)
 	if err != nil {
 		t.Fatalf("erro ao buscar documentos após deleção: %v", err)
 	}
