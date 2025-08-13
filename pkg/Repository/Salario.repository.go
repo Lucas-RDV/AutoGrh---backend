@@ -2,79 +2,93 @@ package Repository
 
 import (
 	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/utils/DateStringToTime"
+	"AutoGRH/pkg/utils/PtrToNullTime"
 	"database/sql"
 	"fmt"
 	"log"
-	"time"
 )
 
-// Cria um salário para um funcionário
+// CreateSalario cria um salário para um funcionário
 func CreateSalario(s *Entity.Salario) error {
 	query := `INSERT INTO salario (funcionarioID, inicio, valor) VALUES (?, ?, ?)`
 
-	result, err := DB.Exec(query, s.FuncionarioID, s.Inicio.Format("2006-01-02"), s.Valor)
+	result, err := DB.Exec(query, s.FuncionarioID, s.Inicio, s.Valor)
 	if err != nil {
 		return fmt.Errorf("erro ao inserir salário: %w", err)
 	}
-
-	s.Id, err = result.LastInsertId()
-	return err
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("erro ao obter ID do salário: %w", err)
+	}
+	s.ID = id
+	return nil
 }
 
-// Retorna todos os salários de um funcionário
+// GetSalariosByFuncionarioID retorna todos os salários de um funcionário (ordenados por início)
 func GetSalariosByFuncionarioID(funcionarioID int64) ([]Entity.Salario, error) {
-	query := `SELECT salarioID, funcionarioID, inicio, fim, valor FROM salario WHERE funcionarioID = ? ORDER BY inicio ASC`
+	query := `SELECT salarioID, funcionarioID, inicio, fim, valor
+	          FROM salario WHERE funcionarioID = ? ORDER BY inicio ASC`
 
 	rows, err := DB.Query(query, funcionarioID)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao buscar salários: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em GetSalariosByFuncionarioID: %v", cerr)
+		}
+	}()
 
 	var salarios []Entity.Salario
 	for rows.Next() {
 		var s Entity.Salario
-		var inicioStr, fimStr sql.NullString
-		err := rows.Scan(&s.Id, &s.FuncionarioID, &inicioStr, &fimStr, &s.Valor)
-		if err != nil {
+		var inicioStr string
+		var fimStr sql.NullString
+
+		if err := rows.Scan(&s.ID, &s.FuncionarioID, &inicioStr, &fimStr, &s.Valor); err != nil {
 			log.Printf("erro ao ler salário: %v", err)
 			continue
 		}
 
-		s.Inicio, err = time.Parse("2006-01-02", inicioStr.String)
+		parsedInicio, err := DateStringToTime.DateStringToTime(inicioStr)
 		if err != nil {
 			log.Printf("erro ao converter data de início: %v", err)
 			continue
 		}
+		s.Inicio = parsedInicio
 
 		if fimStr.Valid {
-			fimParsed, err := time.Parse("2006-01-02", fimStr.String)
+			parsedFim, err := DateStringToTime.DateStringToTime(fimStr.String)
 			if err == nil {
-				s.Fim = &fimParsed
+				s.Fim = &parsedFim
 			}
 		}
 
 		salarios = append(salarios, s)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar salários: %w", err)
+	}
 	return salarios, nil
 }
 
-// Atualiza um salário
+// UpdateSalario atualiza um salário
 func UpdateSalario(s *Entity.Salario) error {
 	query := `UPDATE salario SET valor = ?, inicio = ?, fim = ? WHERE salarioID = ?`
-	var fimStr interface{}
-	if s.Fim != nil {
-		fimStr = s.Fim.Format("2006-01-02")
-	} else {
-		fimStr = nil
+	_, err := DB.Exec(query, s.Valor, s.Inicio, PtrToNullTime.PtrToNullTime(s.Fim), s.ID)
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar salário: %w", err)
 	}
-	_, err := DB.Exec(query, s.Valor, s.Inicio.Format("2006-01-02"), fimStr, s.Id)
-	return err
+	return nil
 }
 
-// Deleta um salário
+// DeleteSalario remove um salário
 func DeleteSalario(id int64) error {
 	query := `DELETE FROM salario WHERE salarioID = ?`
 	_, err := DB.Exec(query, id)
-	return err
+	if err != nil {
+		return fmt.Errorf("erro ao deletar salário: %w", err)
+	}
+	return nil
 }

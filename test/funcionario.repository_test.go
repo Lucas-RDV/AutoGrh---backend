@@ -17,7 +17,7 @@ func TestCreateFuncionario(t *testing.T) {
 	if err != nil {
 		t.Fatalf("erro ao criar funcionario: %v", err)
 	}
-	if f.Id == 0 {
+	if f.ID == 0 {
 		t.Error("ID do funcionario não foi definido")
 	}
 }
@@ -33,7 +33,7 @@ func TestGetFuncionarioByID(t *testing.T) {
 		t.Fatalf("erro ao criar funcionario para busca: %v", err)
 	}
 
-	fetched, err := Repository.GetFuncionarioByID(f.Id)
+	fetched, err := Repository.GetFuncionarioByID(f.ID)
 	if err != nil {
 		t.Fatalf("erro ao buscar funcionario: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestUpdateFuncionario(t *testing.T) {
 		t.Fatalf("erro ao atualizar funcionario: %v", err)
 	}
 
-	updated, _ := Repository.GetFuncionarioByID(f.Id)
+	updated, _ := Repository.GetFuncionarioByID(f.ID)
 	if updated.Cargo != "Coordenador" || updated.SalarioInicial != 3200.00 {
 		t.Error("atualização de funcionario falhou")
 	}
@@ -71,12 +71,12 @@ func TestDeleteFuncionario(t *testing.T) {
 
 	Repository.CreateFuncionario(f)
 
-	err := Repository.DeleteFuncionario(f.Id)
+	err := Repository.DeleteFuncionario(f.ID)
 	if err != nil {
 		t.Fatalf("erro ao deletar funcionario: %v", err)
 	}
 
-	deleted, _ := Repository.GetFuncionarioByID(f.Id)
+	deleted, _ := Repository.GetFuncionarioByID(f.ID)
 	if deleted != nil {
 		t.Error("funcionario ainda existe após exclusão")
 	}
@@ -103,7 +103,7 @@ func TestListFuncionarios(t *testing.T) {
 	// Verifica se o funcionário recém-criado está na lista
 	found := false
 	for _, funci := range funcionarios {
-		if funci.Id == f.Id {
+		if funci.ID == f.ID {
 			found = true
 			break
 		}

@@ -19,20 +19,20 @@ func createDocumentoFuncionario(t *testing.T) {
 	if err != nil {
 		t.Fatalf("erro ao criar funcionario: %v", err)
 	}
-	documentoFuncionarioID = funcionario.Id
+	documentoFuncionarioID = funcionario.ID
 }
 
 func TestCreateDocumento(t *testing.T) {
 	createDocumentoFuncionario(t)
 	doc := &Entity.Documento{
-		FuncionarioId: documentoFuncionarioID,
+		FuncionarioID: documentoFuncionarioID,
 		Doc:           []byte("RG escaneado"),
 	}
 	err := Repository.CreateDocumento(doc)
 	if err != nil {
 		t.Fatalf("erro ao criar documento: %v", err)
 	}
-	if doc.Id == 0 {
+	if doc.ID == 0 {
 		t.Error("documento criado sem ID")
 	}
 	documentoCriado = *doc
@@ -46,7 +46,7 @@ func TestGetDocumentosByFuncionarioID(t *testing.T) {
 
 	found := false
 	for _, d := range docs {
-		if d.Id == documentoCriado.Id {
+		if d.ID == documentoCriado.ID {
 			found = true
 			break
 		}
@@ -64,7 +64,7 @@ func TestListDocumentos(t *testing.T) {
 
 	found := false
 	for _, d := range docs {
-		if d.Id == documentoCriado.Id {
+		if d.ID == documentoCriado.ID {
 			found = true
 			break
 		}
@@ -75,7 +75,7 @@ func TestListDocumentos(t *testing.T) {
 }
 
 func TestDeleteDocumento(t *testing.T) {
-	err := Repository.DeleteDocumento(documentoCriado.Id)
+	err := Repository.DeleteDocumento(documentoCriado.ID)
 	if err != nil {
 		t.Fatalf("erro ao deletar documento: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestDeleteDocumento(t *testing.T) {
 		t.Fatalf("erro ao buscar documentos após deleção: %v", err)
 	}
 	for _, d := range docs {
-		if d.Id == documentoCriado.Id {
+		if d.ID == documentoCriado.ID {
 			t.Error("documento ainda existe após exclusão")
 		}
 	}

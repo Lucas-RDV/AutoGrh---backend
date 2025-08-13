@@ -2,116 +2,144 @@ package Repository
 
 import (
 	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/utils/DateStringToTime"
 	"database/sql"
 	"fmt"
 	"log"
-	"time"
 )
 
-// CreateFerias Cria um novo período de férias
+// CreateFerias cria um novo período de férias
 func CreateFerias(f *Entity.Ferias) error {
 	query := `INSERT INTO ferias (funcionarioID, dias, inicio, vencimento, vencido, valor)
-              VALUES (?, ?, ?, ?, ?, ?)`
+	          VALUES (?, ?, ?, ?, ?, ?)`
 
 	result, err := DB.Exec(query, f.FuncionarioID, f.Dias, f.Inicio, f.Vencimento, f.Vencido, f.Valor)
 	if err != nil {
-		return fmt.Errorf("erro ao inserir ferias: %w", err)
+		return fmt.Errorf("erro ao inserir férias: %w", err)
 	}
 
-	f.Id, err = result.LastInsertId()
-	return err
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("erro ao obter ID de férias inseridas: %w", err)
+	}
+	f.ID = id
+	return nil
 }
 
-// GetFeriasByID Busca férias por ID, incluindo os descansos
+// GetFeriasByID busca férias por ID, incluindo os descansos
 func GetFeriasByID(id int64) (*Entity.Ferias, error) {
 	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor
-              FROM ferias WHERE feriasID = ?`
+	          FROM ferias WHERE feriasID = ?`
 
 	row := DB.QueryRow(query, id)
 
 	var f Entity.Ferias
-	err := row.Scan(&f.Id, &f.FuncionarioID, &f.Dias, &f.Inicio, &f.Vencimento, &f.Vencido, &f.Valor)
-	if err != nil {
+	var inicioStr, vencimentoStr string
+	if err := row.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr, &f.Vencido, &f.Valor); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("erro ao buscar ferias: %w", err)
+		return nil, fmt.Errorf("erro ao buscar férias: %w", err)
+	}
+
+	var err error
+	f.Inicio, err = DateStringToTime.DateStringToTime(inicioStr)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao converter data de início: %w", err)
+	}
+	f.Vencimento, err = DateStringToTime.DateStringToTime(vencimentoStr)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao converter data de vencimento: %w", err)
 	}
 
 	// Carrega os descansos
-	descansos, err := GetDescansosByFeriasID(f.Id)
+	descansos, err := GetDescansosByFeriasID(f.ID)
 	if err != nil {
 		log.Printf("erro ao carregar descansos: %v", err)
-	}
-	f.Descansos = []Entity.Descanso{}
-	for _, d := range descansos {
-		f.Descansos = append(f.Descansos, *d)
+	} else {
+		f.Descansos = make([]Entity.Descanso, 0, len(descansos))
+		for _, d := range descansos {
+			f.Descansos = append(f.Descansos, *d)
+		}
 	}
 
 	return &f, nil
 }
 
-// UpdateFerias Atualiza férias
+// UpdateFerias atualiza um período de férias
 func UpdateFerias(f *Entity.Ferias) error {
 	query := `UPDATE ferias SET dias = ?, inicio = ?, vencimento = ?, vencido = ?, valor = ?
-              WHERE feriasID = ?`
+	          WHERE feriasID = ?`
 
-	_, err := DB.Exec(query, f.Dias, f.Inicio, f.Vencimento, f.Vencido, f.Valor, f.Id)
-	return err
+	_, err := DB.Exec(query, f.Dias, f.Inicio, f.Vencimento, f.Vencido, f.Valor, f.ID)
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar férias: %w", err)
+	}
+	return nil
 }
 
-// DeleteFerias Deleta período de férias
+// DeleteFerias remove um período de férias por ID
 func DeleteFerias(id int64) error {
 	query := `DELETE FROM ferias WHERE feriasID = ?`
 	_, err := DB.Exec(query, id)
-	return err
+	if err != nil {
+		return fmt.Errorf("erro ao deletar férias: %w", err)
+	}
+	return nil
 }
 
-// GetFeriasByFuncionarioID Lista todas as férias de um funcionário
+// GetFeriasByFuncionarioID lista todas as férias de um funcionário (com descansos)
 func GetFeriasByFuncionarioID(funcionarioID int64) ([]*Entity.Ferias, error) {
 	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor
-              FROM ferias WHERE funcionarioID = ?`
+	          FROM ferias WHERE funcionarioID = ?`
 
 	rows, err := DB.Query(query, funcionarioID)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao buscar ferias por funcionario: %w", err)
+		return nil, fmt.Errorf("erro ao buscar férias por funcionário: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em GetFeriasByFuncionarioID: %v", cerr)
+		}
+	}()
 
-	var feriasList []*Entity.Ferias
+	var lista []*Entity.Ferias
 	for rows.Next() {
 		var f Entity.Ferias
 		var inicioStr, vencimentoStr string
-
-		err := rows.Scan(&f.Id, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr, &f.Vencido, &f.Valor)
-		if err != nil {
-			log.Printf("erro ao ler ferias: %v", err)
+		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr, &f.Vencido, &f.Valor); err != nil {
+			log.Printf("erro ao ler férias: %v", err)
 			continue
 		}
 
-		// Parse das datas
-		f.Inicio, err = time.Parse("2006-01-02", inicioStr)
-		if err != nil {
-			log.Printf("erro ao converter data de inicio: %v", err)
+		if f.Inicio, err = DateStringToTime.DateStringToTime(inicioStr); err != nil {
+			log.Printf("erro ao converter data de início: %v", err)
 			continue
 		}
-		f.Vencimento, err = time.Parse("2006-01-02", vencimentoStr)
-		if err != nil {
+		if f.Vencimento, err = DateStringToTime.DateStringToTime(vencimentoStr); err != nil {
 			log.Printf("erro ao converter data de vencimento: %v", err)
 			continue
 		}
 
-		// Carrega descansos
-		descansos, _ := GetDescansosByFeriasID(f.Id)
-		for _, d := range descansos {
-			f.Descansos = append(f.Descansos, *d)
+		// Carrega descansos para cada registro
+		descansos, derr := GetDescansosByFeriasID(f.ID)
+		if derr != nil {
+			log.Printf("erro ao carregar descansos: %v", derr)
+		} else {
+			for _, d := range descansos {
+				f.Descansos = append(f.Descansos, *d)
+			}
 		}
 
-		feriasList = append(feriasList, &f)
+		lista = append(lista, &f)
 	}
-	return feriasList, nil
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar férias: %w", err)
+	}
+	return lista, nil
 }
 
+// ListFerias lista todos os registros de férias (sem carregar descansos)
 func ListFerias() ([]Entity.Ferias, error) {
 	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor FROM ferias`
 
@@ -119,31 +147,34 @@ func ListFerias() ([]Entity.Ferias, error) {
 	if err != nil {
 		return nil, fmt.Errorf("erro ao listar férias: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em ListFerias: %v", cerr)
+		}
+	}()
 
 	var lista []Entity.Ferias
 	for rows.Next() {
 		var f Entity.Ferias
 		var inicioStr, vencimentoStr string
-
-		err := rows.Scan(&f.Id, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr, &f.Vencido, &f.Valor)
-		if err != nil {
+		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr, &f.Vencido, &f.Valor); err != nil {
 			log.Printf("erro ao ler férias: %v", err)
 			continue
 		}
 
-		f.Inicio, err = time.Parse("2006-01-02", inicioStr)
-		if err != nil {
-			log.Printf("erro ao converter data inicio: %v", err)
+		if f.Inicio, err = DateStringToTime.DateStringToTime(inicioStr); err != nil {
+			log.Printf("erro ao converter data de início: %v", err)
 			continue
 		}
-		f.Vencimento, err = time.Parse("2006-01-02", vencimentoStr)
-		if err != nil {
-			log.Printf("erro ao converter data vencimento: %v", err)
+		if f.Vencimento, err = DateStringToTime.DateStringToTime(vencimentoStr); err != nil {
+			log.Printf("erro ao converter data de vencimento: %v", err)
 			continue
 		}
 
 		lista = append(lista, f)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar férias: %w", err)
 	}
 	return lista, nil
 }

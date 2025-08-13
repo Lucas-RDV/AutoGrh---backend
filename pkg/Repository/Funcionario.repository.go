@@ -7,6 +7,7 @@ import (
 	"AutoGRH/pkg/utils/PtrToNullTime"
 	"database/sql"
 	"fmt"
+	"log"
 )
 
 // CreateFuncionario cria um novo funcionário no banco
@@ -147,8 +148,11 @@ func ListFuncionarios() ([]*Entity.Funcionario, error) {
 	if err != nil {
 		return nil, fmt.Errorf("erro ao listar funcionários: %w", err)
 	}
-	defer rows.Close()
-
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em ListFuncionarios: %v", cerr)
+		}
+	}()
 	var lista []*Entity.Funcionario
 	for rows.Next() {
 		var f Entity.Funcionario

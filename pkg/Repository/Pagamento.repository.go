@@ -2,26 +2,30 @@ package Repository
 
 import (
 	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/utils/DateStringToTime"
 	"fmt"
 	"log"
-	"time"
 )
 
-// Cria um novo pagamento vinculado a funcionário, tipo e folha (opcional)
+// CreatePagamento cria um novo pagamento vinculado a funcionário, tipo e (opcionalmente) folha
 func CreatePagamento(p *Entity.Pagamento) error {
 	query := `INSERT INTO pagamento (funcionarioID, folhaID, tipoID, valor, data)
               VALUES (?, ?, ?, ?, ?)`
 
-	result, err := DB.Exec(query, p.FuncionarioId, p.FolhaId, p.TipoId, p.Valor, p.Data)
+	result, err := DB.Exec(query, p.FuncionarioID, p.FolhaID, p.TipoID, p.Valor, p.Data)
 	if err != nil {
 		return fmt.Errorf("erro ao inserir pagamento: %w", err)
 	}
 
-	p.Id, err = result.LastInsertId()
-	return err
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("erro ao obter ID do pagamento inserido: %w", err)
+	}
+	p.ID = id
+	return nil
 }
 
-// Busca pagamentos por funcionário
+// GetPagamentosByFuncionarioID busca pagamentos por funcionário (mais recentes primeiro)
 func GetPagamentosByFuncionarioID(funcionarioID int64) ([]Entity.Pagamento, error) {
 	query := `SELECT pagamentoID, funcionarioID, folhaID, tipoID, valor, data
 			  FROM pagamento
@@ -32,47 +36,60 @@ func GetPagamentosByFuncionarioID(funcionarioID int64) ([]Entity.Pagamento, erro
 	if err != nil {
 		return nil, fmt.Errorf("erro ao buscar pagamentos: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em GetPagamentosByFuncionarioID: %v", cerr)
+		}
+	}()
 
 	var pagamentos []Entity.Pagamento
 	for rows.Next() {
 		var p Entity.Pagamento
 		var dataStr string
 
-		err := rows.Scan(&p.Id, &p.FuncionarioId, &p.FolhaId, &p.TipoId, &p.Valor, &dataStr)
-		if err != nil {
+		if err := rows.Scan(&p.ID, &p.FuncionarioID, &p.FolhaID, &p.TipoID, &p.Valor, &dataStr); err != nil {
 			log.Printf("erro ao ler pagamento: %v", err)
 			continue
 		}
 
-		p.Data, err = time.Parse("2006-01-02", dataStr)
+		parsed, err := DateStringToTime.DateStringToTime(dataStr)
 		if err != nil {
-			log.Printf("erro ao converter data: %v", err)
+			log.Printf("erro ao converter data do pagamento: %v", err)
 			continue
 		}
+		p.Data = parsed
 
 		pagamentos = append(pagamentos, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar pagamentos por funcionário: %w", err)
 	}
 	return pagamentos, nil
 }
 
-// Atualiza um pagamento
+// UpdatePagamento atualiza um pagamento
 func UpdatePagamento(p *Entity.Pagamento) error {
 	query := `UPDATE pagamento SET folhaID = ?, tipoID = ?, valor = ?, data = ?
               WHERE pagamentoID = ?`
 
-	_, err := DB.Exec(query, p.FolhaId, p.TipoId, p.Valor, p.Data, p.Id)
-	return err
+	_, err := DB.Exec(query, p.FolhaID, p.TipoID, p.Valor, p.Data, p.ID)
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar pagamento: %w", err)
+	}
+	return nil
 }
 
-// Deleta um pagamento
+// DeletePagamento remove um pagamento por ID
 func DeletePagamento(id int64) error {
 	query := `DELETE FROM pagamento WHERE pagamentoID = ?`
 	_, err := DB.Exec(query, id)
-	return err
+	if err != nil {
+		return fmt.Errorf("erro ao deletar pagamento: %w", err)
+	}
+	return nil
 }
 
-// ListPagamentos retorna todos os pagamentos registrados no sistema
+// ListPagamentos retorna todos os pagamentos (com o tipo resolvido), mais recentes primeiro
 func ListPagamentos() ([]Entity.Pagamento, error) {
 	query := `SELECT p.pagamentoID, p.funcionarioID, p.folhaID, p.tipoID, t.tipo, p.data, p.valor
               FROM pagamento p
@@ -83,33 +100,38 @@ func ListPagamentos() ([]Entity.Pagamento, error) {
 	if err != nil {
 		return nil, fmt.Errorf("erro ao listar pagamentos: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em ListPagamentos: %v", cerr)
+		}
+	}()
 
 	var pagamentos []Entity.Pagamento
 	for rows.Next() {
 		var p Entity.Pagamento
 		var dataStr string
 
-		err := rows.Scan(&p.Id, &p.FuncionarioId, &p.FolhaId, &p.TipoId, &p.Tipo, &dataStr, &p.Valor)
-		if err != nil {
+		if err := rows.Scan(&p.ID, &p.FuncionarioID, &p.FolhaID, &p.TipoID, &p.Tipo, &dataStr, &p.Valor); err != nil {
 			log.Printf("erro ao ler pagamento: %v", err)
 			continue
 		}
 
-		// Corrigido: formato apenas com data
-		p.Data, err = time.Parse("2006-01-02", dataStr)
+		parsed, err := DateStringToTime.DateStringToTime(dataStr)
 		if err != nil {
 			log.Printf("erro ao converter data do pagamento: %v", err)
 			continue
 		}
+		p.Data = parsed
 
 		pagamentos = append(pagamentos, p)
 	}
-
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar pagamentos: %w", err)
+	}
 	return pagamentos, nil
 }
 
-// Buscar pagamentos de uma folha
+// GetPagamentosByFolhaID busca pagamentos de uma folha específica
 func GetPagamentosByFolhaID(folhaID int64) ([]Entity.Pagamento, error) {
 	query := `SELECT p.pagamentoID, p.funcionarioID, p.folhaID, p.tipoID, t.tipo, p.valor, p.data
               FROM pagamento p
@@ -120,27 +142,33 @@ func GetPagamentosByFolhaID(folhaID int64) ([]Entity.Pagamento, error) {
 	if err != nil {
 		return nil, fmt.Errorf("erro ao buscar pagamentos por folha: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em GetPagamentosByFolhaID: %v", cerr)
+		}
+	}()
 
 	var pagamentos []Entity.Pagamento
 	for rows.Next() {
 		var p Entity.Pagamento
 		var dataStr string
 
-		err := rows.Scan(&p.Id, &p.FuncionarioId, &p.FolhaId, &p.TipoId, &p.Tipo, &p.Valor, &dataStr)
-		if err != nil {
-			log.Println("erro ao ler pagamento:", err)
+		if err := rows.Scan(&p.ID, &p.FuncionarioID, &p.FolhaID, &p.TipoID, &p.Tipo, &p.Valor, &dataStr); err != nil {
+			log.Printf("erro ao ler pagamento: %v", err)
 			continue
 		}
 
-		parsed, err := time.Parse("2006-01-02", dataStr)
+		parsed, err := DateStringToTime.DateStringToTime(dataStr)
 		if err != nil {
-			log.Println("erro ao converter data do pagamento:", err)
+			log.Printf("erro ao converter data do pagamento: %v", err)
 			continue
 		}
 		p.Data = parsed
 
 		pagamentos = append(pagamentos, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar pagamentos por folha: %w", err)
 	}
 	return pagamentos, nil
 }

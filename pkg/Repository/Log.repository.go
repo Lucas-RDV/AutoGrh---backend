@@ -2,53 +2,52 @@ package Repository
 
 import (
 	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/utils/DateStringToTime"
 	"database/sql"
 	"fmt"
 	"log"
-	"time"
 )
 
-// Cria um novo log no banco
+// CreateLog cria um novo log no banco
 func CreateLog(l *Entity.Log) error {
-	query := `INSERT INTO log (usuarioID, eventoID, data, action)
-			  VALUES (?, ?, ?, ?)`
+	query := `INSERT INTO log (usuarioID, eventoID, data, action) VALUES (?, ?, ?, ?)`
 
-	result, err := DB.Exec(query, l.UsuarioId, l.EventoId, l.Data, l.Message)
+	// l.Data é time.Time; o driver MySQL mapeia para TIMESTAMP corretamente
+	result, err := DB.Exec(query, l.UsuarioID, l.EventoID, l.Data, l.Message)
 	if err != nil {
 		return fmt.Errorf("erro ao inserir log: %w", err)
 	}
 
 	id, err := result.LastInsertId()
-	if err == nil {
-		l.Id = id
+	if err != nil {
+		return fmt.Errorf("erro ao obter ID do novo log: %w", err)
 	}
-	return err
+	l.ID = id
+	return nil
 }
 
-// Busca um log por ID
+// GetLogByID busca um log por ID
 func GetLogByID(id int64) (*Entity.Log, error) {
 	query := `SELECT logID, usuarioID, eventoID, data, action FROM log WHERE logID = ?`
 	row := DB.QueryRow(query, id)
 
 	var l Entity.Log
-	var dataStr string
-	err := row.Scan(&l.Id, &l.UsuarioId, &l.EventoId, &dataStr, &l.Message)
-	if err != nil {
+	var dtStr string
+	if err := row.Scan(&l.ID, &l.UsuarioID, &l.EventoID, &dtStr, &l.Message); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("erro ao buscar log: %w", err)
 	}
-
-	l.Data, err = time.Parse("2006-01-02 15:04:05", dataStr)
+	t, err := DateStringToTime.DateStringToTime(dtStr)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao converter data do log: %w", err)
 	}
-
+	l.Data = t
 	return &l, nil
 }
 
-// Lista todos os logs de um usuário
+// GetLogsByUsuarioID lista todos os logs de um usuário (mais recentes primeiro)
 func GetLogsByUsuarioID(usuarioID int64) ([]*Entity.Log, error) {
 	query := `SELECT logID, usuarioID, eventoID, data, action FROM log WHERE usuarioID = ? ORDER BY data DESC`
 
@@ -56,56 +55,69 @@ func GetLogsByUsuarioID(usuarioID int64) ([]*Entity.Log, error) {
 	if err != nil {
 		return nil, fmt.Errorf("erro ao buscar logs do usuário: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em GetLogsByUsuarioID: %v", cerr)
+		}
+	}()
 
 	var logs []*Entity.Log
 	for rows.Next() {
 		var l Entity.Log
-		var dataStr string
-		err := rows.Scan(&l.Id, &l.UsuarioId, &l.EventoId, &dataStr, &l.Message)
-		if err != nil {
+		var dtStr string
+		if err := rows.Scan(&l.ID, &l.UsuarioID, &l.EventoID, &dtStr, &l.Message); err != nil {
 			log.Printf("erro ao ler log: %v", err)
 			continue
 		}
-
-		l.Data, err = time.Parse("2006-01-02 15:04:05", dataStr)
+		t, err := DateStringToTime.DateStringToTime(dtStr)
 		if err != nil {
 			log.Printf("erro ao converter data do log: %v", err)
 			continue
 		}
-
+		l.Data = t
 		logs = append(logs, &l)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar logs do usuário: %w", err)
 	}
 	return logs, nil
 }
 
-// Lista todos os logs do sistema (com limite opcional)
+// ListAllLogs lista todos os logs do sistema (com limite obrigatório > 0)
 func ListAllLogs(limit int) ([]*Entity.Log, error) {
-	query := `SELECT logID, usuarioID, eventoID, data, action FROM log ORDER BY data DESC LIMIT ?`
+	if limit <= 0 {
+		return nil, fmt.Errorf("limit deve ser maior que zero")
+	}
 
+	query := `SELECT logID, usuarioID, eventoID, data, action FROM log ORDER BY data DESC LIMIT ?`
 	rows, err := DB.Query(query, limit)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao listar logs: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em ListAllLogs: %v", cerr)
+		}
+	}()
 
 	var logs []*Entity.Log
 	for rows.Next() {
 		var l Entity.Log
-		var dataStr string
-		err := rows.Scan(&l.Id, &l.UsuarioId, &l.EventoId, &dataStr, &l.Message)
-		if err != nil {
+		var dtStr string
+		if err := rows.Scan(&l.ID, &l.UsuarioID, &l.EventoID, &dtStr, &l.Message); err != nil {
 			log.Printf("erro ao ler log: %v", err)
 			continue
 		}
-
-		l.Data, err = time.Parse("2006-01-02 15:04:05", dataStr)
+		t, err := DateStringToTime.DateStringToTime(dtStr)
 		if err != nil {
 			log.Printf("erro ao converter data do log: %v", err)
 			continue
 		}
-
+		l.Data = t
 		logs = append(logs, &l)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar logs: %w", err)
 	}
 	return logs, nil
 }

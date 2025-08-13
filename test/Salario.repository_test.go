@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var salarioFuncionarioId int64
+var salarioFuncionarioID int64
 var salarioEntity *Entity.Salario
 
 // Cria um funcionário de teste (evita duplicatas)
@@ -29,7 +29,7 @@ func ensureFuncionarioDeTeste(t *testing.T) int64 {
 	existentes, _ := Repository.ListFuncionarios()
 	for _, f := range existentes {
 		if f.Nome == nome {
-			return f.Id
+			return f.ID
 		}
 	}
 
@@ -38,27 +38,27 @@ func ensureFuncionarioDeTeste(t *testing.T) int64 {
 	if err != nil {
 		t.Fatalf("erro ao criar funcionário de teste: %v", err)
 	}
-	return f.Id
+	return f.ID
 }
 
 func TestCreateSalario(t *testing.T) {
-	salarioFuncionarioId = ensureFuncionarioDeTeste(t)
+	salarioFuncionarioID = ensureFuncionarioDeTeste(t)
 	inicio := time.Now()
 	valor := 3200.50
 
-	s := Entity.NewSalario(salarioFuncionarioId, inicio, valor)
+	s := Entity.NewSalario(salarioFuncionarioID, inicio, valor)
 	err := Repository.CreateSalario(s)
 	if err != nil {
 		t.Fatalf("erro ao criar salário: %v", err)
 	}
-	if s.Id == 0 {
+	if s.ID == 0 {
 		t.Error("ID do salário não foi atribuído")
 	}
 	salarioEntity = s
 }
 
 func TestGetSalariosByFuncionarioID(t *testing.T) {
-	salarios, err := Repository.GetSalariosByFuncionarioID(salarioFuncionarioId)
+	salarios, err := Repository.GetSalariosByFuncionarioID(salarioFuncionarioID)
 	if err != nil {
 		t.Fatalf("erro ao buscar salários: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestDeleteSalario(t *testing.T) {
 	if salarioEntity == nil {
 		t.Skip("salário não criado")
 	}
-	err := Repository.DeleteSalario(salarioEntity.Id)
+	err := Repository.DeleteSalario(salarioEntity.ID)
 	if err != nil {
 		t.Fatalf("erro ao deletar salário: %v", err)
 	}

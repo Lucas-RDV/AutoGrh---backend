@@ -2,94 +2,106 @@ package Repository
 
 import (
 	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/utils/DateStringToTime"
 	"database/sql"
 	"fmt"
 	"log"
-	"time"
 )
 
-// Cria um novo vale
+// CreateVale cria um novo vale
 func CreateVale(v *Entity.Vale) error {
-	query := `INSERT INTO vale (funcionarioID, valor, data, aprovado, pago)
-              VALUES (?, ?, ?, ?, ?)`
+	query := `INSERT INTO vale (funcionarioID, valor, data, aprovado, pago) VALUES (?, ?, ?, ?, ?)`
 
-	result, err := DB.Exec(query, v.FuncionarioId, v.Valor, v.Data.Format("2006-01-02"), v.Aprovado, v.Pago)
+	result, err := DB.Exec(query, v.FuncionarioID, v.Valor, v.Data, v.Aprovado, v.Pago)
 	if err != nil {
 		return fmt.Errorf("erro ao criar vale: %w", err)
 	}
 
-	v.Id, err = result.LastInsertId()
-	return err
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("erro ao obter ID do vale criado: %w", err)
+	}
+	v.ID = id
+	return nil
 }
 
-// Busca um vale por ID
+// GetValeByID busca um vale por ID
 func GetValeByID(id int64) (*Entity.Vale, error) {
-	query := `SELECT valeID, funcionarioID, valor, data, aprovado, pago
-              FROM vale WHERE valeID = ?`
-
+	query := `SELECT valeID, funcionarioID, valor, data, aprovado, pago FROM vale WHERE valeID = ?`
 	row := DB.QueryRow(query, id)
 
 	var v Entity.Vale
 	var dataStr string
-	err := row.Scan(&v.Id, &v.FuncionarioId, &v.Valor, &dataStr, &v.Aprovado, &v.Pago)
-	if err != nil {
+	if err := row.Scan(&v.ID, &v.FuncionarioID, &v.Valor, &dataStr, &v.Aprovado, &v.Pago); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("erro ao buscar vale: %w", err)
 	}
 
-	v.Data, err = time.Parse("2006-01-02", dataStr)
+	parsed, err := DateStringToTime.DateStringToTime(dataStr)
 	if err != nil {
-		log.Printf("erro ao converter data do vale: %v", err)
+		return nil, fmt.Errorf("erro ao converter data do vale: %w", err)
 	}
+	v.Data = parsed
 
 	return &v, nil
 }
 
-// Lista todos os vales de um funcionário
-func GetValesByFuncionarioID(funcionarioId int64) ([]Entity.Vale, error) {
-	query := `SELECT valeID, funcionarioID, valor, data, aprovado, pago
-              FROM vale WHERE funcionarioID = ?`
+// GetValesByFuncionarioID lista todos os vales de um funcionário
+func GetValesByFuncionarioID(funcionarioID int64) ([]Entity.Vale, error) {
+	query := `SELECT valeID, funcionarioID, valor, data, aprovado, pago FROM vale WHERE funcionarioID = ?`
 
-	rows, err := DB.Query(query, funcionarioId)
+	rows, err := DB.Query(query, funcionarioID)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao buscar vales: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em GetValesByFuncionarioID: %v", cerr)
+		}
+	}()
 
 	var vales []Entity.Vale
 	for rows.Next() {
 		var v Entity.Vale
 		var dataStr string
-		err := rows.Scan(&v.Id, &v.FuncionarioId, &v.Valor, &dataStr, &v.Aprovado, &v.Pago)
-		if err != nil {
-			log.Println("erro ao ler vale:", err)
+		if err := rows.Scan(&v.ID, &v.FuncionarioID, &v.Valor, &dataStr, &v.Aprovado, &v.Pago); err != nil {
+			log.Printf("erro ao ler vale: %v", err)
 			continue
 		}
 
-		v.Data, err = time.Parse("2006-01-02", dataStr)
+		parsed, err := DateStringToTime.DateStringToTime(dataStr)
 		if err != nil {
 			log.Printf("erro ao converter data do vale: %v", err)
 			continue
 		}
+		v.Data = parsed
 
 		vales = append(vales, v)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar vales: %w", err)
 	}
 	return vales, nil
 }
 
-// Atualiza um vale
+// UpdateVale atualiza um vale existente
 func UpdateVale(v *Entity.Vale) error {
 	query := `UPDATE vale SET valor = ?, data = ?, aprovado = ?, pago = ? WHERE valeID = ?`
-
-	_, err := DB.Exec(query, v.Valor, v.Data.Format("2006-01-02"), v.Aprovado, v.Pago, v.Id)
-	return err
+	_, err := DB.Exec(query, v.Valor, v.Data, v.Aprovado, v.Pago, v.ID)
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar vale: %w", err)
+	}
+	return nil
 }
 
-// Deleta um vale
+// DeleteVale remove um vale por ID
 func DeleteVale(id int64) error {
 	query := `DELETE FROM vale WHERE valeID = ?`
 	_, err := DB.Exec(query, id)
-	return err
+	if err != nil {
+		return fmt.Errorf("erro ao deletar vale: %w", err)
+	}
+	return nil
 }

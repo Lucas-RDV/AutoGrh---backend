@@ -11,12 +11,18 @@ import (
 // CreateDescanso cria um descanso vinculado a um período de férias
 func CreateDescanso(d *Entity.Descanso) error {
 	query := `INSERT INTO descanso (feriasID, inicio, fim, valor, pago, aprovado)
-	          VALUES (?, ?, ?, ?, ?, ?)`
+              VALUES (?, ?, ?, ?, ?, ?)`
 
-	_, err := DB.Exec(query, d.FeriasID, d.Inicio, d.Fim, d.Valor, d.Pago, d.Aprovado)
+	res, err := DB.Exec(query, d.FeriasID, d.Inicio, d.Fim, d.Valor, d.Pago, d.Aprovado)
 	if err != nil {
 		return fmt.Errorf("erro ao inserir descanso: %w", err)
 	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("erro ao obter ID do descanso inserido: %w", err)
+	}
+	d.ID = id
 	return nil
 }
 
@@ -58,7 +64,11 @@ func GetDescansosByFeriasID(feriasID int64) ([]*Entity.Descanso, error) {
 	if err != nil {
 		return nil, fmt.Errorf("erro ao buscar descansos: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em GetDescansosByFeriasID: %v", cerr)
+		}
+	}()
 
 	var descansos []*Entity.Descanso
 	for rows.Next() {
@@ -95,7 +105,11 @@ func ListDescansos() ([]*Entity.Descanso, error) {
 	if err != nil {
 		return nil, fmt.Errorf("erro ao listar descansos: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em ListDescansos: %v", cerr)
+		}
+	}()
 
 	var descansos []*Entity.Descanso
 	for rows.Next() {

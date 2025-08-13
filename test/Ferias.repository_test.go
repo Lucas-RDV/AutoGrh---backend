@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var feriasFuncionarioId int64
+var feriasFuncionarioID int64
 var feriasEntity Entity.Ferias
 
 func createFeriasFuncionario(t *testing.T) {
@@ -19,7 +19,7 @@ func createFeriasFuncionario(t *testing.T) {
 	if err != nil {
 		t.Fatalf("erro ao criar funcionário: %v", err)
 	}
-	feriasFuncionarioId = funcionario.Id
+	feriasFuncionarioID = funcionario.ID
 }
 
 func TestCreateFerias(t *testing.T) {
@@ -29,7 +29,7 @@ func TestCreateFerias(t *testing.T) {
 	vencimento := inicio.AddDate(0, 1, 0)
 
 	f := &Entity.Ferias{
-		FuncionarioID: feriasFuncionarioId,
+		FuncionarioID: feriasFuncionarioID,
 		Dias:          30,
 		Inicio:        inicio,
 		Vencimento:    vencimento,
@@ -41,21 +41,21 @@ func TestCreateFerias(t *testing.T) {
 	if err != nil {
 		t.Fatalf("erro ao criar férias: %v", err)
 	}
-	if f.Id == 0 {
+	if f.ID == 0 {
 		t.Error("ID das férias não foi definido")
 	}
 	feriasEntity = *f
 }
 
 func TestGetFeriasByFuncionarioID(t *testing.T) {
-	fList, err := Repository.GetFeriasByFuncionarioID(feriasFuncionarioId)
+	fList, err := Repository.GetFeriasByFuncionarioID(feriasFuncionarioID)
 	if err != nil {
 		t.Fatalf("erro ao buscar férias por funcionário: %v", err)
 	}
 
 	found := false
 	for _, f := range fList {
-		if f.Id == feriasEntity.Id {
+		if f.ID == feriasEntity.ID {
 			found = true
 			break
 		}
@@ -75,10 +75,10 @@ func TestUpdateFerias(t *testing.T) {
 		t.Fatalf("erro ao atualizar férias: %v", err)
 	}
 
-	list, _ := Repository.GetFeriasByFuncionarioID(feriasFuncionarioId)
+	list, _ := Repository.GetFeriasByFuncionarioID(feriasFuncionarioID)
 	updated := false
 	for _, f := range list {
-		if f.Id == feriasEntity.Id && f.Dias == 20 && f.Vencido {
+		if f.ID == feriasEntity.ID && f.Dias == 20 && f.Vencido {
 			updated = true
 			break
 		}
@@ -89,14 +89,14 @@ func TestUpdateFerias(t *testing.T) {
 }
 
 func TestDeleteFerias(t *testing.T) {
-	err := Repository.DeleteFerias(feriasEntity.Id)
+	err := Repository.DeleteFerias(feriasEntity.ID)
 	if err != nil {
 		t.Fatalf("erro ao deletar férias: %v", err)
 	}
 
-	list, _ := Repository.GetFeriasByFuncionarioID(feriasFuncionarioId)
+	list, _ := Repository.GetFeriasByFuncionarioID(feriasFuncionarioID)
 	for _, f := range list {
-		if f.Id == feriasEntity.Id {
+		if f.ID == feriasEntity.ID {
 			t.Error("férias ainda existem após exclusão")
 		}
 	}
@@ -107,7 +107,7 @@ func TestListFerias(t *testing.T) {
 	inicio := time.Now()
 	vencimento := inicio.AddDate(0, 1, 0)
 	f := &Entity.Ferias{
-		FuncionarioID: feriasFuncionarioId,
+		FuncionarioID: feriasFuncionarioID,
 		Dias:          10,
 		Inicio:        inicio,
 		Vencimento:    vencimento,
@@ -126,7 +126,7 @@ func TestListFerias(t *testing.T) {
 
 	found := false
 	for _, fer := range lista {
-		if fer.Id == f.Id {
+		if fer.ID == f.ID {
 			found = true
 			break
 		}

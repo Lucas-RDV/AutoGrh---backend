@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-var logUsuarioId int64
-var logEventoId int64 = 1 // ID de evento genérico para teste
+var logUsuarioID int64
+var logEventoID int64 = 1 // ID de evento genérico para teste
 var logEntity *Entity.Log
 
 func createLogUsuario(t *testing.T) int64 {
@@ -30,17 +30,17 @@ func createLogUsuario(t *testing.T) int64 {
 		}
 		t.Fatalf("usuário de teste já existe mas não foi possível recuperar o ID")
 	}
-	return tempUser.Id
+	return tempUser.ID
 }
 
 func TestCreateLog(t *testing.T) {
-	logUsuarioId = createLogUsuario(t)
-	log := Entity.NewLog(logUsuarioId, logEventoId, "Usuário testou a criação de log")
+	logUsuarioID = createLogUsuario(t)
+	log := Entity.NewLog(logUsuarioID, logEventoID, "Usuário testou a criação de log")
 	err := Repository.CreateLog(log)
 	if err != nil {
 		t.Fatalf("erro ao criar log: %v", err)
 	}
-	if log.Id == 0 {
+	if log.ID == 0 {
 		t.Error("ID do log não foi atribuído")
 	}
 	logEntity = log
@@ -50,7 +50,7 @@ func TestGetLogByID(t *testing.T) {
 	if logEntity == nil {
 		t.Skip("log de teste não criado")
 	}
-	log, err := Repository.GetLogByID(logEntity.Id)
+	log, err := Repository.GetLogByID(logEntity.ID)
 	if err != nil {
 		t.Fatalf("erro ao buscar log: %v", err)
 	}
@@ -62,8 +62,8 @@ func TestGetLogByID(t *testing.T) {
 }
 
 func TestGetLogsByUsuarioID(t *testing.T) {
-	logUsuarioId = createLogUsuario(t)
-	logs, err := Repository.GetLogsByUsuarioID(logUsuarioId)
+	logUsuarioID = createLogUsuario(t)
+	logs, err := Repository.GetLogsByUsuarioID(logUsuarioID)
 	if err != nil {
 		t.Fatalf("erro ao buscar logs do usuário: %v", err)
 	}

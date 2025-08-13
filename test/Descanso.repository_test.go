@@ -26,7 +26,7 @@ func createTestDescanso(t *testing.T) *Entity.Descanso {
 	}
 
 	d := &Entity.Descanso{
-		FeriasID: f.Id,
+		FeriasID: f.ID,
 		Inicio:   time.Now(),
 		Fim:      time.Now().AddDate(0, 0, 5),
 		Valor:    500.0,
@@ -38,7 +38,7 @@ func createTestDescanso(t *testing.T) *Entity.Descanso {
 	if err != nil {
 		t.Fatalf("erro ao criar descanso: %v", err)
 	}
-	descansoID = d.Id
+	descansoID = d.ID
 	descansoEntity = d
 	return d
 }
@@ -56,7 +56,7 @@ func TestGetDescansoByID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("erro ao buscar descanso: %v", err)
 	}
-	if d == nil || d.Id != descansoID {
+	if d == nil || d.ID != descansoID {
 		t.Error("descanso buscado não corresponde ao esperado")
 	}
 }
@@ -69,7 +69,7 @@ func TestGetDescansosByFeriasID(t *testing.T) {
 	}
 	found := false
 	for _, item := range descansos {
-		if item.Id == descansoID {
+		if item.ID == descansoID {
 			found = true
 			break
 		}
@@ -87,7 +87,7 @@ func TestUpdateDescanso(t *testing.T) {
 		t.Fatalf("erro ao atualizar descanso: %v", err)
 	}
 
-	dAtualizado, _ := Repository.GetDescansoByID(d.Id)
+	dAtualizado, _ := Repository.GetDescansoByID(d.ID)
 	if dAtualizado.Valor != 999.0 {
 		t.Error("valor do descanso não foi atualizado corretamente")
 	}
@@ -95,12 +95,12 @@ func TestUpdateDescanso(t *testing.T) {
 
 func TestDeleteDescanso(t *testing.T) {
 	d := createTestDescanso(t)
-	err := Repository.DeleteDescanso(d.Id)
+	err := Repository.DeleteDescanso(d.ID)
 	if err != nil {
 		t.Fatalf("erro ao deletar descanso: %v", err)
 	}
 
-	dExcluido, _ := Repository.GetDescansoByID(d.Id)
+	dExcluido, _ := Repository.GetDescansoByID(d.ID)
 	if dExcluido != nil {
 		t.Error("descanso ainda existe após exclusão")
 	}

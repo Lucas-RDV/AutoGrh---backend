@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var pagamentoFuncionarioId int64
+var pagamentoFuncionarioID int64
 var pagamentoEntity Entity.Pagamento
 
 func createPagamentoFuncionario(t *testing.T) {
@@ -19,7 +19,7 @@ func createPagamentoFuncionario(t *testing.T) {
 	if err != nil {
 		t.Fatalf("erro ao criar funcionario: %v", err)
 	}
-	pagamentoFuncionarioId = funcionario.Id
+	pagamentoFuncionarioID = funcionario.ID
 }
 
 func GetTipoPagamentoID(tipo string) (int64, error) {
@@ -36,18 +36,18 @@ func TestCreatePagamento(t *testing.T) {
 	if err != nil {
 		t.Fatalf("erro ao criar folha: %v", err)
 	}
-	tipoId, err := GetTipoPagamentoID("salario")
+	tipoID, err := GetTipoPagamentoID("salario")
 	if err != nil {
 		t.Fatalf("erro ao obter tipo_pagamento: %v", err)
 	}
-	p := Entity.NewPagamento(tipoId, time.Now(), 3000.00)
-	p.FuncionarioId = pagamentoFuncionarioId
-	p.FolhaId = folha.Id
+	p := Entity.NewPagamento(tipoID, time.Now(), 3000.00)
+	p.FuncionarioID = pagamentoFuncionarioID
+	p.FolhaID = folha.ID
 	err = Repository.CreatePagamento(p)
 	if err != nil {
 		t.Fatalf("erro ao criar pagamento: %v", err)
 	}
-	if p.Id == 0 {
+	if p.ID == 0 {
 		t.Error("ID do pagamento não foi definido")
 	}
 	pagamentoEntity = *p
@@ -72,15 +72,15 @@ func TestGetPagamentosByFuncionarioID(t *testing.T) {
 	}
 
 	// Garante que o tipo "salario" existe e pega o ID
-	tipoId, err := GetTipoPagamentoID("salario")
+	tipoID, err := GetTipoPagamentoID("salario")
 	if err != nil {
 		t.Fatalf("erro ao obter tipo_pagamento: %v", err)
 	}
 
 	// Cria um pagamento
-	p := Entity.NewPagamento(tipoId, time.Now(), 3000.00)
-	p.FuncionarioId = funcionario.Id
-	p.FolhaId = folha.Id
+	p := Entity.NewPagamento(tipoID, time.Now(), 3000.00)
+	p.FuncionarioID = funcionario.ID
+	p.FolhaID = folha.ID
 
 	err = Repository.CreatePagamento(p)
 	if err != nil {
@@ -88,7 +88,7 @@ func TestGetPagamentosByFuncionarioID(t *testing.T) {
 	}
 
 	// Busca os pagamentos do funcionário
-	pags, err := Repository.GetPagamentosByFuncionarioID(funcionario.Id)
+	pags, err := Repository.GetPagamentosByFuncionarioID(funcionario.ID)
 	if err != nil {
 		t.Fatalf("erro ao buscar pagamentos: %v", err)
 	}
@@ -96,7 +96,7 @@ func TestGetPagamentosByFuncionarioID(t *testing.T) {
 	// Verifica se o pagamento recém-criado está na lista
 	found := false
 	for _, pag := range pags {
-		if pag.Id == p.Id {
+		if pag.ID == p.ID {
 			found = true
 			break
 		}
@@ -113,10 +113,10 @@ func TestUpdatePagamento(t *testing.T) {
 		t.Fatalf("erro ao atualizar pagamento: %v", err)
 	}
 
-	pags, _ := Repository.GetPagamentosByFuncionarioID(pagamentoFuncionarioId)
+	pags, _ := Repository.GetPagamentosByFuncionarioID(pagamentoFuncionarioID)
 	updated := false
 	for _, p := range pags {
-		if p.Id == pagamentoEntity.Id && p.Valor == 3500.00 {
+		if p.ID == pagamentoEntity.ID && p.Valor == 3500.00 {
 			updated = true
 			break
 		}
@@ -127,14 +127,14 @@ func TestUpdatePagamento(t *testing.T) {
 }
 
 func TestDeletePagamento(t *testing.T) {
-	err := Repository.DeletePagamento(pagamentoEntity.Id)
+	err := Repository.DeletePagamento(pagamentoEntity.ID)
 	if err != nil {
 		t.Fatalf("erro ao deletar pagamento: %v", err)
 	}
 
-	pags, _ := Repository.GetPagamentosByFuncionarioID(pagamentoFuncionarioId)
+	pags, _ := Repository.GetPagamentosByFuncionarioID(pagamentoFuncionarioID)
 	for _, p := range pags {
-		if p.Id == pagamentoEntity.Id {
+		if p.ID == pagamentoEntity.ID {
 			t.Error("pagamento ainda existe após exclusão")
 		}
 	}
@@ -159,15 +159,15 @@ func TestListPagamentos(t *testing.T) {
 	}
 
 	// Garante tipo
-	tipoId, err := GetTipoPagamentoID("salario")
+	tipoID, err := GetTipoPagamentoID("salario")
 	if err != nil {
 		t.Fatalf("erro ao obter tipo_pagamento: %v", err)
 	}
 
 	// Cria pagamento
-	p := Entity.NewPagamento(tipoId, time.Now(), 3200.00)
-	p.FuncionarioId = funcionario.Id
-	p.FolhaId = folha.Id
+	p := Entity.NewPagamento(tipoID, time.Now(), 3200.00)
+	p.FuncionarioID = funcionario.ID
+	p.FolhaID = folha.ID
 
 	err = Repository.CreatePagamento(p)
 	if err != nil {
@@ -183,7 +183,7 @@ func TestListPagamentos(t *testing.T) {
 	// Confirma se o criado está na lista
 	found := false
 	for _, pag := range pagamentos {
-		if pag.Id == p.Id {
+		if pag.ID == p.ID {
 			found = true
 			break
 		}

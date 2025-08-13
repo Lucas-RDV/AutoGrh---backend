@@ -2,71 +2,88 @@ package Repository
 
 import (
 	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/utils/DateStringToTime"
 	"fmt"
 	"log"
-	"time"
 )
 
-// Cria uma falta
+// CreateFalta cria um registro de falta
 func CreateFalta(f *Entity.Falta) error {
 	query := `INSERT INTO falta (funcionarioID, quantidade, data) VALUES (?, ?, ?)`
 
-	result, err := DB.Exec(query, f.FuncionarioId, f.Quantidade, f.Mes)
+	result, err := DB.Exec(query, f.FuncionarioID, f.Quantidade, f.Mes)
 	if err != nil {
 		return fmt.Errorf("erro ao inserir falta: %w", err)
 	}
 
-	f.Id, err = result.LastInsertId()
-	return err
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("erro ao obter ID da falta inserida: %w", err)
+	}
+	f.ID = id
+	return nil
 }
 
-// Busca todas as faltas de um funcionário
-func GetFaltasByFuncionarioID(funcionarioId int64) ([]Entity.Falta, error) {
+// GetFaltasByFuncionarioID busca todas as faltas de um funcionário
+func GetFaltasByFuncionarioID(funcionarioID int64) ([]Entity.Falta, error) {
 	query := `SELECT faltaID, funcionarioID, quantidade, data FROM falta WHERE funcionarioID = ?`
 
-	rows, err := DB.Query(query, funcionarioId)
+	rows, err := DB.Query(query, funcionarioID)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao buscar faltas: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em GetFaltasByFuncionarioID: %v", cerr)
+		}
+	}()
 
 	var faltas []Entity.Falta
 	for rows.Next() {
 		var f Entity.Falta
 		var mesStr string
 
-		err := rows.Scan(&f.Id, &f.FuncionarioId, &f.Quantidade, &mesStr)
-		if err != nil {
+		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Quantidade, &mesStr); err != nil {
 			log.Printf("erro ao ler falta: %v", err)
 			continue
 		}
 
-		parsed, err := time.Parse("2006-01-02", mesStr)
+		parsed, err := DateStringToTime.DateStringToTime(mesStr)
 		if err != nil {
-			log.Printf("erro ao converter data: %v", err)
+			log.Printf("erro ao converter data da falta: %v", err)
 			continue
 		}
 		f.Mes = parsed
 
 		faltas = append(faltas, f)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar faltas: %w", err)
+	}
 	return faltas, nil
 }
 
-// Atualiza uma falta
+// UpdateFalta atualiza um registro de falta
 func UpdateFalta(f *Entity.Falta) error {
 	query := `UPDATE falta SET quantidade = ?, data = ? WHERE faltaID = ?`
-	_, err := DB.Exec(query, f.Quantidade, f.Mes, f.Id)
-	return err
+	_, err := DB.Exec(query, f.Quantidade, f.Mes, f.ID)
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar falta: %w", err)
+	}
+	return nil
 }
 
-// Deleta uma falta
+// DeleteFalta remove uma falta por ID
 func DeleteFalta(id int64) error {
 	query := `DELETE FROM falta WHERE faltaID = ?`
 	_, err := DB.Exec(query, id)
-	return err
+	if err != nil {
+		return fmt.Errorf("erro ao deletar falta: %w", err)
+	}
+	return nil
 }
 
+// ListFaltas lista todas as faltas
 func ListFaltas() ([]Entity.Falta, error) {
 	query := `SELECT faltaID, funcionarioID, quantidade, data FROM falta`
 
@@ -74,27 +91,33 @@ func ListFaltas() ([]Entity.Falta, error) {
 	if err != nil {
 		return nil, fmt.Errorf("erro ao listar faltas: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em ListFaltas: %v", cerr)
+		}
+	}()
 
 	var faltas []Entity.Falta
 	for rows.Next() {
 		var f Entity.Falta
 		var mesStr string
 
-		err := rows.Scan(&f.Id, &f.FuncionarioId, &f.Quantidade, &mesStr)
-		if err != nil {
+		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Quantidade, &mesStr); err != nil {
 			log.Printf("erro ao ler falta: %v", err)
 			continue
 		}
 
-		parsed, err := time.Parse("2006-01-02", mesStr)
+		parsed, err := DateStringToTime.DateStringToTime(mesStr)
 		if err != nil {
-			log.Printf("erro ao converter data: %v", err)
+			log.Printf("erro ao converter data da falta: %v", err)
 			continue
 		}
 		f.Mes = parsed
 
 		faltas = append(faltas, f)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar faltas: %w", err)
 	}
 	return faltas, nil
 }

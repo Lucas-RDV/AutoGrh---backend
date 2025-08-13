@@ -2,49 +2,54 @@ package Repository
 
 import (
 	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/utils/DateStringToTime"
 	"database/sql"
 	"fmt"
 	"log"
-	"time"
 )
 
-// Cria uma nova folha de pagamento
+// CreateFolha cria uma nova folha de pagamento
 func CreateFolha(f *Entity.FolhaPagamentos) error {
 	query := `INSERT INTO folha_pagamento (data) VALUES (?)`
 
-	result, err := DB.Exec(query, f.Data.Format("2006-01-02"))
+	result, err := DB.Exec(query, f.Data)
 	if err != nil {
 		return fmt.Errorf("erro ao criar folha: %w", err)
 	}
 
-	f.Id, err = result.LastInsertId()
-	return err
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("erro ao obter ID da folha criada: %w", err)
+	}
+	f.ID = id
+	return nil
 }
 
-// Busca uma folha de pagamento e seus pagamentos
+// GetFolhaByID busca uma folha de pagamento e seus pagamentos
 func GetFolhaByID(id int64) (*Entity.FolhaPagamentos, error) {
 	query := `SELECT folhaID, data FROM folha_pagamento WHERE folhaID = ?`
 	row := DB.QueryRow(query, id)
 
 	var f Entity.FolhaPagamentos
 	var dataStr string
-	err := row.Scan(&f.Id, &dataStr)
-	if err != nil {
+	if err := row.Scan(&f.ID, &dataStr); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("erro ao buscar folha: %w", err)
 	}
 
-	parsed, err := time.Parse("2006-01-02", dataStr)
+	var err error
+	f.Data, err = DateStringToTime.DateStringToTime(dataStr)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao converter data: %w", err)
+		return nil, fmt.Errorf("erro ao converter data da folha: %w", err)
 	}
-	f.Data = parsed
 
-	// Buscar pagamentos relacionados
-	pagamentos, err := GetPagamentosByFolhaID(f.Id)
-	if err == nil {
+	// Buscar pagamentos relacionados e somar o valor total
+	pagamentos, perr := GetPagamentosByFolhaID(f.ID)
+	if perr != nil {
+		log.Printf("erro ao carregar pagamentos da folha %d: %v", f.ID, perr)
+	} else {
 		f.Pagamentos = pagamentos
 		for _, p := range pagamentos {
 			f.Valor += p.Valor
@@ -54,7 +59,7 @@ func GetFolhaByID(id int64) (*Entity.FolhaPagamentos, error) {
 	return &f, nil
 }
 
-// Lista todas as folhas de pagamento
+// ListFolhas lista todas as folhas de pagamento (com total calculado)
 func ListFolhas() ([]*Entity.FolhaPagamentos, error) {
 	query := `SELECT folhaID, data FROM folha_pagamento ORDER BY data DESC`
 
@@ -62,27 +67,32 @@ func ListFolhas() ([]*Entity.FolhaPagamentos, error) {
 	if err != nil {
 		return nil, fmt.Errorf("erro ao listar folhas: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em ListFolhas: %v", cerr)
+		}
+	}()
 
 	var folhas []*Entity.FolhaPagamentos
 	for rows.Next() {
 		var f Entity.FolhaPagamentos
 		var dataStr string
-		err := rows.Scan(&f.Id, &dataStr)
-		if err != nil {
-			log.Println("erro ao ler folha:", err)
+		if err := rows.Scan(&f.ID, &dataStr); err != nil {
+			log.Printf("erro ao ler folha: %v", err)
 			continue
 		}
 
-		parsed, err := time.Parse("2006-01-02", dataStr)
-		if err != nil {
-			log.Println("erro ao converter data da folha:", err)
+		parsed, perr := DateStringToTime.DateStringToTime(dataStr)
+		if perr != nil {
+			log.Printf("erro ao converter data da folha: %v", perr)
 			continue
 		}
 		f.Data = parsed
 
-		pagamentos, err := GetPagamentosByFolhaID(f.Id)
-		if err == nil {
+		pagamentos, gerr := GetPagamentosByFolhaID(f.ID)
+		if gerr != nil {
+			log.Printf("erro ao carregar pagamentos da folha %d: %v", f.ID, gerr)
+		} else {
 			f.Pagamentos = pagamentos
 			for _, p := range pagamentos {
 				f.Valor += p.Valor
@@ -90,6 +100,9 @@ func ListFolhas() ([]*Entity.FolhaPagamentos, error) {
 		}
 
 		folhas = append(folhas, &f)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar folhas: %w", err)
 	}
 	return folhas, nil
 }

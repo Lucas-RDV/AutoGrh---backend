@@ -21,7 +21,7 @@ func TestCreateUsuario(t *testing.T) {
 	if err != nil {
 		t.Fatalf("erro ao criar usuario: %v", err)
 	}
-	if testUsuario.Id == 0 {
+	if testUsuario.ID == 0 {
 		t.Error("ID do usuário não foi atribuído")
 	}
 }
@@ -30,7 +30,7 @@ func TestGetUsuarioByID(t *testing.T) {
 	if testUsuario == nil {
 		t.Fatal("usuário de teste não foi criado")
 	}
-	u, err := Repository.GetUsuarioByID(testUsuario.Id)
+	u, err := Repository.GetUsuarioByID(testUsuario.ID)
 	if err != nil {
 		t.Fatalf("erro ao buscar usuario: %v", err)
 	}
@@ -50,7 +50,7 @@ func TestUpdateUsuario(t *testing.T) {
 		t.Fatalf("erro ao atualizar usuario: %v", err)
 	}
 
-	u, _ := Repository.GetUsuarioByID(testUsuario.Id)
+	u, _ := Repository.GetUsuarioByID(testUsuario.ID)
 	if u.Password != "nova_senha" || !u.IsAdmin {
 		t.Error("usuario não foi atualizado corretamente")
 	}
@@ -63,7 +63,7 @@ func TestListUsuarios(t *testing.T) {
 	}
 	found := false
 	for _, u := range usuarios {
-		if u.Id == testUsuario.Id {
+		if u.ID == testUsuario.ID {
 			found = true
 			break
 		}

@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-var valeFuncionarioId int64
+var valeFuncionarioID int64
 var valeEntity *Entity.Vale
 
 func createValeFuncionario(t *testing.T) int64 {
-	if valeFuncionarioId != 0 {
-		return valeFuncionarioId
+	if valeFuncionarioID != 0 {
+		return valeFuncionarioID
 	}
 
 	funcionario := Entity.NewFuncionario(
@@ -25,19 +25,19 @@ func createValeFuncionario(t *testing.T) int64 {
 		t.Fatalf("erro ao criar funcionario de teste para vale: %v", err)
 	}
 
-	valeFuncionarioId = funcionario.Id
-	return valeFuncionarioId
+	valeFuncionarioID = funcionario.ID
+	return valeFuncionarioID
 }
 
 func TestCreateVale(t *testing.T) {
-	funcId := createValeFuncionario(t)
-	vale := Entity.NewVale(funcId, 300.0, time.Now())
+	funcID := createValeFuncionario(t)
+	vale := Entity.NewVale(funcID, 300.0, time.Now())
 
 	err := Repository.CreateVale(vale)
 	if err != nil {
 		t.Fatalf("erro ao criar vale: %v", err)
 	}
-	if vale.Id == 0 {
+	if vale.ID == 0 {
 		t.Error("ID do vale nao foi atribuido")
 	}
 	valeEntity = vale
@@ -47,7 +47,7 @@ func TestGetValeByID(t *testing.T) {
 	if valeEntity == nil {
 		t.Skip("vale de teste nao criado")
 	}
-	v, err := Repository.GetValeByID(valeEntity.Id)
+	v, err := Repository.GetValeByID(valeEntity.ID)
 	if err != nil {
 		t.Fatalf("erro ao buscar vale: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestGetValeByID(t *testing.T) {
 }
 
 func TestGetValesByFuncionarioID(t *testing.T) {
-	vales, err := Repository.GetValesByFuncionarioID(valeFuncionarioId)
+	vales, err := Repository.GetValesByFuncionarioID(valeFuncionarioID)
 	if err != nil {
 		t.Fatalf("erro ao buscar vales do funcionario: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestUpdateVale(t *testing.T) {
 		t.Fatalf("erro ao atualizar vale: %v", err)
 	}
 
-	updated, _ := Repository.GetValeByID(valeEntity.Id)
+	updated, _ := Repository.GetValeByID(valeEntity.ID)
 	if !updated.Aprovado || !updated.Pago {
 		t.Error("vale nao foi atualizado corretamente")
 	}
@@ -87,12 +87,12 @@ func TestDeleteVale(t *testing.T) {
 	if valeEntity == nil {
 		t.Skip("vale de teste nao criado")
 	}
-	err := Repository.DeleteVale(valeEntity.Id)
+	err := Repository.DeleteVale(valeEntity.ID)
 	if err != nil {
 		t.Fatalf("erro ao deletar vale: %v", err)
 	}
 
-	v, err := Repository.GetValeByID(valeEntity.Id)
+	v, err := Repository.GetValeByID(valeEntity.ID)
 	if err != nil {
 		t.Fatalf("erro ao buscar vale apos exclusao: %v", err)
 	}

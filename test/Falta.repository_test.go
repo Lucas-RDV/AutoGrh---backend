@@ -15,7 +15,7 @@ func TestCreateFalta(t *testing.T) {
 	}
 
 	falta := &Entity.Falta{
-		FuncionarioId: funcionario.Id,
+		FuncionarioID: funcionario.ID,
 		Quantidade:    2,
 		Mes:           time.Now(),
 	}
@@ -23,7 +23,7 @@ func TestCreateFalta(t *testing.T) {
 	if err != nil {
 		t.Fatalf("erro ao criar falta: %v", err)
 	}
-	if falta.Id == 0 {
+	if falta.ID == 0 {
 		t.Error("ID da falta não foi definido")
 	}
 }
@@ -36,7 +36,7 @@ func TestGetFaltasByFuncionarioID(t *testing.T) {
 	}
 
 	falta := &Entity.Falta{
-		FuncionarioId: funcionario.Id,
+		FuncionarioID: funcionario.ID,
 		Quantidade:    3,
 		Mes:           time.Now(),
 	}
@@ -45,7 +45,7 @@ func TestGetFaltasByFuncionarioID(t *testing.T) {
 		t.Fatalf("erro ao criar falta: %v", err)
 	}
 
-	faltas, err := Repository.GetFaltasByFuncionarioID(funcionario.Id)
+	faltas, err := Repository.GetFaltasByFuncionarioID(funcionario.ID)
 	if err != nil {
 		t.Fatalf("erro ao buscar faltas: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestUpdateFalta(t *testing.T) {
 	Repository.CreateFuncionario(funcionario)
 
 	falta := &Entity.Falta{
-		FuncionarioId: funcionario.Id,
+		FuncionarioID: funcionario.ID,
 		Quantidade:    1,
 		Mes:           time.Now(),
 	}
@@ -78,20 +78,20 @@ func TestDeleteFalta(t *testing.T) {
 	Repository.CreateFuncionario(funcionario)
 
 	falta := &Entity.Falta{
-		FuncionarioId: funcionario.Id,
+		FuncionarioID: funcionario.ID,
 		Quantidade:    4,
 		Mes:           time.Now(),
 	}
 	Repository.CreateFalta(falta)
 
-	err := Repository.DeleteFalta(falta.Id)
+	err := Repository.DeleteFalta(falta.ID)
 	if err != nil {
 		t.Fatalf("erro ao deletar falta: %v", err)
 	}
 
-	faltas, _ := Repository.GetFaltasByFuncionarioID(funcionario.Id)
+	faltas, _ := Repository.GetFaltasByFuncionarioID(funcionario.ID)
 	for _, f := range faltas {
-		if f.Id == falta.Id {
+		if f.ID == falta.ID {
 			t.Error("falta ainda existe após exclusão")
 		}
 	}
@@ -110,7 +110,7 @@ func TestListFaltas(t *testing.T) {
 
 	// Cria falta
 	f := &Entity.Falta{
-		FuncionarioId: funcionario.Id,
+		FuncionarioID: funcionario.ID,
 		Quantidade:    1,
 		Mes:           time.Now(),
 	}
@@ -127,7 +127,7 @@ func TestListFaltas(t *testing.T) {
 
 	found := false
 	for _, falta := range faltas {
-		if falta.Id == f.Id {
+		if falta.ID == f.ID {
 			found = true
 			break
 		}

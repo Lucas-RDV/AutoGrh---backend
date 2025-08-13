@@ -3,13 +3,17 @@ package test
 import (
 	"AutoGRH/pkg/Repository"
 	"github.com/joho/godotenv"
+	"log"
 	"os"
 	"testing"
 )
 
 func TestMain(m *testing.M) {
 
-	_ = godotenv.Load()
+	err := godotenv.Load("../.env")
+	if err != nil {
+		log.Println("Aviso: arquivo .env não encontrado. Variáveis devem estar no ambiente.")
+	}
 
 	Repository.ConnectDB()
 

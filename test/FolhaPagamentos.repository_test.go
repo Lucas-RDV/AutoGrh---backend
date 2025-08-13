@@ -15,7 +15,7 @@ func TestCreateFolha(t *testing.T) {
 	if err != nil {
 		t.Fatalf("erro ao criar folha: %v", err)
 	}
-	if folha.Id == 0 {
+	if folha.ID == 0 {
 		t.Error("ID da folha não foi definido")
 	}
 	folhaCriada = folha
@@ -26,11 +26,11 @@ func TestGetFolhaByID(t *testing.T) {
 		t.Fatal("Folha não criada previamente")
 	}
 
-	folha, err := Repository.GetFolhaByID(folhaCriada.Id)
+	folha, err := Repository.GetFolhaByID(folhaCriada.ID)
 	if err != nil {
 		t.Fatalf("erro ao buscar folha por ID: %v", err)
 	}
-	if folha == nil || folha.Id != folhaCriada.Id {
+	if folha == nil || folha.ID != folhaCriada.ID {
 		t.Error("Folha retornada difere da criada")
 	}
 }
@@ -43,7 +43,7 @@ func TestListFolhas(t *testing.T) {
 
 	found := false
 	for _, f := range folhas {
-		if f.Id == folhaCriada.Id {
+		if f.ID == folhaCriada.ID {
 			found = true
 			break
 		}
