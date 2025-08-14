@@ -147,7 +147,7 @@ func createTables() {
 		`CREATE TABLE IF NOT EXISTS documento (
 			documentoID BIGINT AUTO_INCREMENT PRIMARY KEY,
 			funcionarioID BIGINT,
-			documento BLOB,
+			documento MEDIUMBLOB,
 			FOREIGN KEY (funcionarioID) REFERENCES funcionario(funcionarioID)
 		);`,
 
