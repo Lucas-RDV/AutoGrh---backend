@@ -2,7 +2,7 @@ package test
 
 import (
 	"AutoGRH/pkg/Entity"
-	"AutoGRH/pkg/Repository"
+	"AutoGRH/pkg/repository"
 	"testing"
 	"time"
 )
@@ -13,7 +13,7 @@ func TestCreateFuncionario(t *testing.T) {
 		"9999-9999", "Analista", time.Now().AddDate(-30, 0, 0), time.Now(), 2500.00,
 	)
 
-	err := Repository.CreateFuncionario(f)
+	err := repository.CreateFuncionario(f)
 	if err != nil {
 		t.Fatalf("erro ao criar funcionario: %v", err)
 	}
@@ -28,12 +28,12 @@ func TestGetFuncionarioByID(t *testing.T) {
 		"8888-8888", "Gerente", time.Now().AddDate(-35, 0, 0), time.Now(), 4000.00,
 	)
 
-	err := Repository.CreateFuncionario(f)
+	err := repository.CreateFuncionario(f)
 	if err != nil {
 		t.Fatalf("erro ao criar funcionario para busca: %v", err)
 	}
 
-	fetched, err := Repository.GetFuncionarioByID(f.ID)
+	fetched, err := repository.GetFuncionarioByID(f.ID)
 	if err != nil {
 		t.Fatalf("erro ao buscar funcionario: %v", err)
 	}
@@ -48,16 +48,16 @@ func TestUpdateFuncionario(t *testing.T) {
 		"7777-7777", "Auxiliar", time.Now().AddDate(-25, 0, 0), time.Now(), 1800.00,
 	)
 
-	Repository.CreateFuncionario(f)
+	repository.CreateFuncionario(f)
 
 	f.Cargo = "Coordenador"
 	f.SalarioInicial = 3200.00
-	err := Repository.UpdateFuncionario(f)
+	err := repository.UpdateFuncionario(f)
 	if err != nil {
 		t.Fatalf("erro ao atualizar funcionario: %v", err)
 	}
 
-	updated, _ := Repository.GetFuncionarioByID(f.ID)
+	updated, _ := repository.GetFuncionarioByID(f.ID)
 	if updated.Cargo != "Coordenador" || updated.SalarioInicial != 3200.00 {
 		t.Error("atualização de funcionario falhou")
 	}
@@ -69,14 +69,14 @@ func TestDeleteFuncionario(t *testing.T) {
 		"6666-6666", "Técnico", time.Now().AddDate(-20, 0, 0), time.Now(), 2300.00,
 	)
 
-	Repository.CreateFuncionario(f)
+	repository.CreateFuncionario(f)
 
-	err := Repository.DeleteFuncionario(f.ID)
+	err := repository.DeleteFuncionario(f.ID)
 	if err != nil {
 		t.Fatalf("erro ao deletar funcionario: %v", err)
 	}
 
-	deleted, _ := Repository.GetFuncionarioByID(f.ID)
+	deleted, _ := repository.GetFuncionarioByID(f.ID)
 	if deleted != nil {
 		t.Error("funcionario ainda existe após exclusão")
 	}
@@ -89,13 +89,13 @@ func TestListFuncionarios(t *testing.T) {
 		"Auxiliar", time.Now().AddDate(-25, 0, 0), time.Now(), 2000.00,
 	)
 
-	err := Repository.CreateFuncionario(f)
+	err := repository.CreateFuncionario(f)
 	if err != nil {
 		t.Fatalf("erro ao criar funcionário para listagem: %v", err)
 	}
 
 	// Executa a listagem
-	funcionarios, err := Repository.ListFuncionarios()
+	funcionarios, err := repository.ListFuncionarios()
 	if err != nil {
 		t.Fatalf("erro ao listar funcionários: %v", err)
 	}

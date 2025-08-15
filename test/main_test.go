@@ -1,7 +1,7 @@
 package test
 
 import (
-	"AutoGRH/pkg/Repository"
+	"AutoGRH/pkg/repository"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -9,19 +9,19 @@ import (
 )
 
 func resetDB() {
-	Repository.DB.Exec("SET FOREIGN_KEY_CHECKS=0")
-	Repository.DB.Exec("TRUNCATE TABLE descanso")
-	Repository.DB.Exec("TRUNCATE TABLE pagamento")
-	Repository.DB.Exec("TRUNCATE TABLE vale")
-	Repository.DB.Exec("TRUNCATE TABLE salario")
-	Repository.DB.Exec("TRUNCATE TABLE falta")
-	Repository.DB.Exec("TRUNCATE TABLE documento")
-	Repository.DB.Exec("TRUNCATE TABLE ferias")
-	Repository.DB.Exec("TRUNCATE TABLE folha_pagamento")
-	Repository.DB.Exec("TRUNCATE TABLE log")
-	Repository.DB.Exec("TRUNCATE TABLE funcionario")
-	Repository.DB.Exec("TRUNCATE TABLE usuario")
-	Repository.DB.Exec("SET FOREIGN_KEY_CHECKS=1")
+	repository.DB.Exec("SET FOREIGN_KEY_CHECKS=0")
+	repository.DB.Exec("TRUNCATE TABLE descanso")
+	repository.DB.Exec("TRUNCATE TABLE pagamento")
+	repository.DB.Exec("TRUNCATE TABLE vale")
+	repository.DB.Exec("TRUNCATE TABLE salario")
+	repository.DB.Exec("TRUNCATE TABLE falta")
+	repository.DB.Exec("TRUNCATE TABLE documento")
+	repository.DB.Exec("TRUNCATE TABLE ferias")
+	repository.DB.Exec("TRUNCATE TABLE folha_pagamento")
+	repository.DB.Exec("TRUNCATE TABLE log")
+	repository.DB.Exec("TRUNCATE TABLE funcionario")
+	repository.DB.Exec("TRUNCATE TABLE usuario")
+	repository.DB.Exec("SET FOREIGN_KEY_CHECKS=1")
 }
 
 func TestMain(m *testing.M) {
@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 		log.Println("Aviso: arquivo .env não encontrado. Variáveis devem estar no ambiente.")
 	}
 
-	Repository.ConnectDB()
+	repository.ConnectDB()
 
 	resetDB()
 

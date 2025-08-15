@@ -1,0 +1,9 @@
+### Login
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{ "login": "admin", "senha": "adm123" }
+
+### /me (protegida) — cole o token retornado no login abaixo
+GET http://localhost:8080/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTUzMjIxNTEsImlhdCI6MTc1NTMwMDU1MX0.ZPIEZjQ5a1cdMnHWtbXDjJBVR01hkSepuWioZBUP0QU
