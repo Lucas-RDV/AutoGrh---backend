@@ -6,13 +6,13 @@ import (
 	"testing"
 )
 
-var testUsuario *Entity.Usuario
+var testUsuario *entity.Usuario
 
 func TestCreateUsuario(t *testing.T) {
 	// Tenta deletar usuário existente para evitar conflito
 	repository.DB.Exec("DELETE FROM usuario WHERE username = ?", "testuser")
 
-	testUsuario = &Entity.Usuario{
+	testUsuario = &entity.Usuario{
 		Username: "testuser",
 		Password: "123456",
 		IsAdmin:  false,

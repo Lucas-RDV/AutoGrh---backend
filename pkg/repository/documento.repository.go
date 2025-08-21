@@ -1,13 +1,13 @@
 package repository
 
 import (
-	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/entity"
 	"fmt"
 	"log"
 )
 
 // CreateDocumento cria um documento vinculado a um funcionário
-func CreateDocumento(d *Entity.Documento) error {
+func CreateDocumento(d *entity.Documento) error {
 	query := `INSERT INTO documento (funcionarioID, documento) VALUES (?, ?)`
 
 	result, err := DB.Exec(query, d.FuncionarioID, d.Doc)
@@ -24,7 +24,7 @@ func CreateDocumento(d *Entity.Documento) error {
 }
 
 // GetDocumentosByFuncionarioID busca documentos por ID de funcionário
-func GetDocumentosByFuncionarioID(funcionarioID int64) ([]Entity.Documento, error) {
+func GetDocumentosByFuncionarioID(funcionarioID int64) ([]entity.Documento, error) {
 	query := `SELECT documentoID, funcionarioID, documento FROM documento WHERE funcionarioID = ?`
 
 	rows, err := DB.Query(query, funcionarioID)
@@ -37,9 +37,9 @@ func GetDocumentosByFuncionarioID(funcionarioID int64) ([]Entity.Documento, erro
 		}
 	}()
 
-	var documentos []Entity.Documento
+	var documentos []entity.Documento
 	for rows.Next() {
-		var d Entity.Documento
+		var d entity.Documento
 		if err := rows.Scan(&d.ID, &d.FuncionarioID, &d.Doc); err != nil {
 			log.Printf("erro ao ler documento: %v", err)
 			continue
@@ -53,7 +53,7 @@ func GetDocumentosByFuncionarioID(funcionarioID int64) ([]Entity.Documento, erro
 }
 
 // ListDocumentos lista todos os documentos
-func ListDocumentos() ([]Entity.Documento, error) {
+func ListDocumentos() ([]entity.Documento, error) {
 	query := `SELECT documentoID, funcionarioID, documento FROM documento`
 
 	rows, err := DB.Query(query)
@@ -66,9 +66,9 @@ func ListDocumentos() ([]Entity.Documento, error) {
 		}
 	}()
 
-	var documentos []Entity.Documento
+	var documentos []entity.Documento
 	for rows.Next() {
-		var d Entity.Documento
+		var d entity.Documento
 		if err := rows.Scan(&d.ID, &d.FuncionarioID, &d.Doc); err != nil {
 			log.Printf("erro ao ler documento: %v", err)
 			continue

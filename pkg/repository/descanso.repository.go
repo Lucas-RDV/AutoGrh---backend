@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/utils/dateStringToTime"
 	"database/sql"
 	"fmt"
@@ -9,7 +9,7 @@ import (
 )
 
 // CreateDescanso cria um descanso vinculado a um período de férias
-func CreateDescanso(d *Entity.Descanso) error {
+func CreateDescanso(d *entity.Descanso) error {
 	query := `INSERT INTO descanso (feriasID, inicio, fim, valor, pago, aprovado)
               VALUES (?, ?, ?, ?, ?, ?)`
 
@@ -27,13 +27,13 @@ func CreateDescanso(d *Entity.Descanso) error {
 }
 
 // GetDescansoByID busca um descanso por ID
-func GetDescansoByID(id int64) (*Entity.Descanso, error) {
+func GetDescansoByID(id int64) (*entity.Descanso, error) {
 	query := `SELECT descansoID, feriasID, inicio, fim, valor, pago, aprovado
 	          FROM descanso WHERE descansoID = ?`
 
 	row := DB.QueryRow(query, id)
 
-	var d Entity.Descanso
+	var d entity.Descanso
 	var inicioStr, fimStr string
 
 	err := row.Scan(&d.ID, &d.FeriasID, &inicioStr, &fimStr, &d.Valor, &d.Pago, &d.Aprovado)
@@ -56,7 +56,7 @@ func GetDescansoByID(id int64) (*Entity.Descanso, error) {
 }
 
 // GetDescansosByFeriasID busca todos os descansos de um período de férias
-func GetDescansosByFeriasID(feriasID int64) ([]*Entity.Descanso, error) {
+func GetDescansosByFeriasID(feriasID int64) ([]*entity.Descanso, error) {
 	query := `SELECT descansoID, feriasID, inicio, fim, valor, pago, aprovado
 	          FROM descanso WHERE feriasID = ?`
 
@@ -70,9 +70,9 @@ func GetDescansosByFeriasID(feriasID int64) ([]*Entity.Descanso, error) {
 		}
 	}()
 
-	var descansos []*Entity.Descanso
+	var descansos []*entity.Descanso
 	for rows.Next() {
-		var d Entity.Descanso
+		var d entity.Descanso
 		var inicioStr, fimStr string
 
 		err := rows.Scan(&d.ID, &d.FeriasID, &inicioStr, &fimStr, &d.Valor, &d.Pago, &d.Aprovado)
@@ -98,7 +98,7 @@ func GetDescansosByFeriasID(feriasID int64) ([]*Entity.Descanso, error) {
 }
 
 // ListDescansos lista todos os descansos
-func ListDescansos() ([]*Entity.Descanso, error) {
+func ListDescansos() ([]*entity.Descanso, error) {
 	query := `SELECT descansoID, feriasID, inicio, fim, valor, pago, aprovado FROM descanso`
 
 	rows, err := DB.Query(query)
@@ -111,9 +111,9 @@ func ListDescansos() ([]*Entity.Descanso, error) {
 		}
 	}()
 
-	var descansos []*Entity.Descanso
+	var descansos []*entity.Descanso
 	for rows.Next() {
-		var d Entity.Descanso
+		var d entity.Descanso
 		var inicioStr, fimStr string
 
 		err := rows.Scan(&d.ID, &d.FeriasID, &inicioStr, &fimStr, &d.Valor, &d.Pago, &d.Aprovado)
@@ -139,7 +139,7 @@ func ListDescansos() ([]*Entity.Descanso, error) {
 }
 
 // UpdateDescanso atualiza um descanso
-func UpdateDescanso(d *Entity.Descanso) error {
+func UpdateDescanso(d *entity.Descanso) error {
 	query := `UPDATE descanso SET inicio = ?, fim = ?, valor = ?, pago = ?, aprovado = ? 
 	          WHERE descansoID = ?`
 

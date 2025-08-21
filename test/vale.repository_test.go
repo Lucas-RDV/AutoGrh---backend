@@ -8,14 +8,14 @@ import (
 )
 
 var valeFuncionarioID int64
-var valeEntity *Entity.Vale
+var valeEntity *entity.Vale
 
 func createValeFuncionario(t *testing.T) int64 {
 	if valeFuncionarioID != 0 {
 		return valeFuncionarioID
 	}
 
-	funcionario := Entity.NewFuncionario(
+	funcionario := entity.NewFuncionario(
 		"Vale Tester", "1234567", "98765432100", "12345678900", "123456789", "Rua A",
 		"999999999", "888888888", "Auxiliar", time.Date(1990, 5, 5, 0, 0, 0, 0, time.UTC),
 		time.Now(), 1200.00,
@@ -31,7 +31,7 @@ func createValeFuncionario(t *testing.T) int64 {
 
 func TestCreateVale(t *testing.T) {
 	funcID := createValeFuncionario(t)
-	vale := Entity.NewVale(funcID, 300.0, time.Now())
+	vale := entity.NewVale(funcID, 300.0, time.Now())
 
 	err := repository.CreateVale(vale)
 	if err != nil {

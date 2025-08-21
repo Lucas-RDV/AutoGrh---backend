@@ -8,7 +8,7 @@ import (
 )
 
 var salarioFuncionarioID int64
-var salarioEntity *Entity.Salario
+var salarioEntity *entity.Salario
 
 // Cria um funcionário de teste (evita duplicatas)
 func ensureFuncionarioDeTeste(t *testing.T) int64 {
@@ -33,7 +33,7 @@ func ensureFuncionarioDeTeste(t *testing.T) int64 {
 		}
 	}
 
-	f := Entity.NewFuncionario(nome, rg, cpf, pis, ctpf, endereco, contato, contatoEmerg, cargo, nascimento, admissao, salarioInicial)
+	f := entity.NewFuncionario(nome, rg, cpf, pis, ctpf, endereco, contato, contatoEmerg, cargo, nascimento, admissao, salarioInicial)
 	err := repository.CreateFuncionario(f)
 	if err != nil {
 		t.Fatalf("erro ao criar funcionário de teste: %v", err)
@@ -46,7 +46,7 @@ func TestCreateSalario(t *testing.T) {
 	inicio := time.Now()
 	valor := 3200.50
 
-	s := Entity.NewSalario(salarioFuncionarioID, inicio, valor)
+	s := entity.NewSalario(salarioFuncionarioID, inicio, valor)
 	err := repository.CreateSalario(s)
 	if err != nil {
 		t.Fatalf("erro ao criar salário: %v", err)

@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/utils/dateStringToTime"
 	"database/sql"
 	"fmt"
@@ -9,7 +9,7 @@ import (
 )
 
 // CreateLog cria um novo log no banco
-func CreateLog(l *Entity.Log) error {
+func CreateLog(l *entity.Log) error {
 	query := `INSERT INTO log (usuarioID, eventoID, data, action) VALUES (?, ?, ?, ?)`
 
 	// l.Data é time.Time; o driver MySQL mapeia para TIMESTAMP corretamente
@@ -27,11 +27,11 @@ func CreateLog(l *Entity.Log) error {
 }
 
 // GetLogByID busca um log por ID
-func GetLogByID(id int64) (*Entity.Log, error) {
+func GetLogByID(id int64) (*entity.Log, error) {
 	query := `SELECT logID, usuarioID, eventoID, data, action FROM log WHERE logID = ?`
 	row := DB.QueryRow(query, id)
 
-	var l Entity.Log
+	var l entity.Log
 	var dtStr string
 	if err := row.Scan(&l.ID, &l.UsuarioID, &l.EventoID, &dtStr, &l.Message); err != nil {
 		if err == sql.ErrNoRows {
@@ -48,7 +48,7 @@ func GetLogByID(id int64) (*Entity.Log, error) {
 }
 
 // GetLogsByUsuarioID lista todos os logs de um usuário (mais recentes primeiro)
-func GetLogsByUsuarioID(usuarioID int64) ([]*Entity.Log, error) {
+func GetLogsByUsuarioID(usuarioID int64) ([]*entity.Log, error) {
 	query := `SELECT logID, usuarioID, eventoID, data, action FROM log WHERE usuarioID = ? ORDER BY data DESC`
 
 	rows, err := DB.Query(query, usuarioID)
@@ -61,9 +61,9 @@ func GetLogsByUsuarioID(usuarioID int64) ([]*Entity.Log, error) {
 		}
 	}()
 
-	var logs []*Entity.Log
+	var logs []*entity.Log
 	for rows.Next() {
-		var l Entity.Log
+		var l entity.Log
 		var dtStr string
 		if err := rows.Scan(&l.ID, &l.UsuarioID, &l.EventoID, &dtStr, &l.Message); err != nil {
 			log.Printf("erro ao ler log: %v", err)
@@ -84,7 +84,7 @@ func GetLogsByUsuarioID(usuarioID int64) ([]*Entity.Log, error) {
 }
 
 // ListAllLogs lista todos os logs do sistema (com limite obrigatório > 0)
-func ListAllLogs(limit int) ([]*Entity.Log, error) {
+func ListAllLogs(limit int) ([]*entity.Log, error) {
 	if limit <= 0 {
 		return nil, fmt.Errorf("limit deve ser maior que zero")
 	}
@@ -100,9 +100,9 @@ func ListAllLogs(limit int) ([]*Entity.Log, error) {
 		}
 	}()
 
-	var logs []*Entity.Log
+	var logs []*entity.Log
 	for rows.Next() {
-		var l Entity.Log
+		var l entity.Log
 		var dtStr string
 		if err := rows.Scan(&l.ID, &l.UsuarioID, &l.EventoID, &dtStr, &l.Message); err != nil {
 			log.Printf("erro ao ler log: %v", err)

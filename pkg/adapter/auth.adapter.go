@@ -2,19 +2,20 @@ package Adapter
 
 import (
 	"context"
+	"strings"
 	"time"
 
-	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/service"
 )
 
 type UserRepositoryAdapter struct {
-	findByLogin     func(ctx context.Context, login string) (*Entity.Usuario, error)
+	findByLogin     func(ctx context.Context, login string) (*entity.Usuario, error)
 	updateLastLogin func(ctx context.Context, userID int64, when time.Time) error
 }
 
 func NewUserRepositoryAdapter(
-	find func(ctx context.Context, login string) (*Entity.Usuario, error),
+	find func(ctx context.Context, login string) (*entity.Usuario, error),
 	update func(ctx context.Context, userID int64, when time.Time) error,
 ) *UserRepositoryAdapter {
 	return &UserRepositoryAdapter{findByLogin: find, updateLastLogin: update}
@@ -36,10 +37,10 @@ func (a *UserRepositoryAdapter) UpdateLastLogin(ctx context.Context, userID int6
 }
 
 type LogRepositoryAdapter struct {
-	create func(ctx context.Context, l *Entity.Log) (int64, error)
+	create func(ctx context.Context, l *entity.Log) (int64, error)
 }
 
-func NewLogRepositoryAdapter(create func(ctx context.Context, l *Entity.Log) (int64, error)) *LogRepositoryAdapter {
+func NewLogRepositoryAdapter(create func(ctx context.Context, l *entity.Log) (int64, error)) *LogRepositoryAdapter {
 	return &LogRepositoryAdapter{create: create}
 }
 
@@ -48,7 +49,7 @@ func (a *LogRepositoryAdapter) Create(ctx context.Context, entry service.LogEntr
 	if entry.UsuarioID != nil {
 		uid = *entry.UsuarioID
 	}
-	l := &Entity.Log{
+	l := &entity.Log{
 		EventoID:  entry.EventoID,
 		UsuarioID: uid,
 		Data:      entry.Quando,
@@ -57,7 +58,7 @@ func (a *LogRepositoryAdapter) Create(ctx context.Context, entry service.LogEntr
 	return a.create(ctx, l)
 }
 
-func mapUsuarioToUserRecord(u *Entity.Usuario) *service.UserRecord {
+func mapUsuarioToUserRecord(u *entity.Usuario) *service.UserRecord {
 	perfil := "usuario"
 	if u.IsAdmin {
 		perfil = "admin"
@@ -68,6 +69,6 @@ func mapUsuarioToUserRecord(u *Entity.Usuario) *service.UserRecord {
 		Login:     u.Username,
 		Perfil:    perfil,
 		Ativo:     true,
-		SenhaHash: u.Password,
+		SenhaHash: strings.TrimSpace(u.Password),
 	}
 }

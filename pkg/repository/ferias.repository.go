@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/utils/dateStringToTime"
 	"database/sql"
 	"fmt"
@@ -9,7 +9,7 @@ import (
 )
 
 // CreateFerias cria um novo período de férias
-func CreateFerias(f *Entity.Ferias) error {
+func CreateFerias(f *entity.Ferias) error {
 	query := `INSERT INTO ferias (funcionarioID, dias, inicio, vencimento, vencido, valor)
 	          VALUES (?, ?, ?, ?, ?, ?)`
 
@@ -27,13 +27,13 @@ func CreateFerias(f *Entity.Ferias) error {
 }
 
 // GetFeriasByID busca férias por ID, incluindo os descansos
-func GetFeriasByID(id int64) (*Entity.Ferias, error) {
+func GetFeriasByID(id int64) (*entity.Ferias, error) {
 	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor
 	          FROM ferias WHERE feriasID = ?`
 
 	row := DB.QueryRow(query, id)
 
-	var f Entity.Ferias
+	var f entity.Ferias
 	var inicioStr, vencimentoStr string
 	if err := row.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr, &f.Vencido, &f.Valor); err != nil {
 		if err == sql.ErrNoRows {
@@ -57,7 +57,7 @@ func GetFeriasByID(id int64) (*Entity.Ferias, error) {
 	if err != nil {
 		log.Printf("erro ao carregar descansos: %v", err)
 	} else {
-		f.Descansos = make([]Entity.Descanso, 0, len(descansos))
+		f.Descansos = make([]entity.Descanso, 0, len(descansos))
 		for _, d := range descansos {
 			f.Descansos = append(f.Descansos, *d)
 		}
@@ -67,7 +67,7 @@ func GetFeriasByID(id int64) (*Entity.Ferias, error) {
 }
 
 // UpdateFerias atualiza um período de férias
-func UpdateFerias(f *Entity.Ferias) error {
+func UpdateFerias(f *entity.Ferias) error {
 	query := `UPDATE ferias SET dias = ?, inicio = ?, vencimento = ?, vencido = ?, valor = ?
 	          WHERE feriasID = ?`
 
@@ -89,7 +89,7 @@ func DeleteFerias(id int64) error {
 }
 
 // GetFeriasByFuncionarioID lista todas as férias de um funcionário (com descansos)
-func GetFeriasByFuncionarioID(funcionarioID int64) ([]*Entity.Ferias, error) {
+func GetFeriasByFuncionarioID(funcionarioID int64) ([]*entity.Ferias, error) {
 	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor
 	          FROM ferias WHERE funcionarioID = ?`
 
@@ -103,9 +103,9 @@ func GetFeriasByFuncionarioID(funcionarioID int64) ([]*Entity.Ferias, error) {
 		}
 	}()
 
-	var lista []*Entity.Ferias
+	var lista []*entity.Ferias
 	for rows.Next() {
-		var f Entity.Ferias
+		var f entity.Ferias
 		var inicioStr, vencimentoStr string
 		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr, &f.Vencido, &f.Valor); err != nil {
 			log.Printf("erro ao ler férias: %v", err)
@@ -140,7 +140,7 @@ func GetFeriasByFuncionarioID(funcionarioID int64) ([]*Entity.Ferias, error) {
 }
 
 // ListFerias lista todos os registros de férias (sem carregar descansos)
-func ListFerias() ([]Entity.Ferias, error) {
+func ListFerias() ([]entity.Ferias, error) {
 	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor FROM ferias`
 
 	rows, err := DB.Query(query)
@@ -153,9 +153,9 @@ func ListFerias() ([]Entity.Ferias, error) {
 		}
 	}()
 
-	var lista []Entity.Ferias
+	var lista []entity.Ferias
 	for rows.Next() {
-		var f Entity.Ferias
+		var f entity.Ferias
 		var inicioStr, vencimentoStr string
 		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr, &f.Vencido, &f.Valor); err != nil {
 			log.Printf("erro ao ler férias: %v", err)

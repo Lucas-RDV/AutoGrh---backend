@@ -8,10 +8,10 @@ import (
 )
 
 var feriasFuncionarioID int64
-var feriasEntity Entity.Ferias
+var feriasEntity entity.Ferias
 
 func createFeriasFuncionario(t *testing.T) {
-	funcionario := Entity.NewFuncionario(
+	funcionario := entity.NewFuncionario(
 		"Funcionario Férias", "12345678", "99999999900", "123456789", "111111", "Rua A", "1234-5678",
 		"9999-9999", "Analista", time.Now().AddDate(-25, 0, 0), time.Now(), 3000.00,
 	)
@@ -28,7 +28,7 @@ func TestCreateFerias(t *testing.T) {
 	inicio := time.Now()
 	vencimento := inicio.AddDate(0, 1, 0)
 
-	f := &Entity.Ferias{
+	f := &entity.Ferias{
 		FuncionarioID: feriasFuncionarioID,
 		Dias:          30,
 		Inicio:        inicio,
@@ -106,7 +106,7 @@ func TestListFerias(t *testing.T) {
 	// Cria férias temporárias para teste
 	inicio := time.Now()
 	vencimento := inicio.AddDate(0, 1, 0)
-	f := &Entity.Ferias{
+	f := &entity.Ferias{
 		FuncionarioID: feriasFuncionarioID,
 		Dias:          10,
 		Inicio:        inicio,

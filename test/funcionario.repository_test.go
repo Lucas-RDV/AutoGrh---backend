@@ -8,7 +8,7 @@ import (
 )
 
 func TestCreateFuncionario(t *testing.T) {
-	f := Entity.NewFuncionario(
+	f := entity.NewFuncionario(
 		"João Teste", "1234567", "12345678900", "123456789", "123456", "Rua A", "1111-1111",
 		"9999-9999", "Analista", time.Now().AddDate(-30, 0, 0), time.Now(), 2500.00,
 	)
@@ -23,7 +23,7 @@ func TestCreateFuncionario(t *testing.T) {
 }
 
 func TestGetFuncionarioByID(t *testing.T) {
-	f := Entity.NewFuncionario(
+	f := entity.NewFuncionario(
 		"Maria Busca", "7654321", "98765432100", "987654321", "654321", "Rua B", "2222-2222",
 		"8888-8888", "Gerente", time.Now().AddDate(-35, 0, 0), time.Now(), 4000.00,
 	)
@@ -43,7 +43,7 @@ func TestGetFuncionarioByID(t *testing.T) {
 }
 
 func TestUpdateFuncionario(t *testing.T) {
-	f := Entity.NewFuncionario(
+	f := entity.NewFuncionario(
 		"Lucas Update", "1111111", "11111111111", "111111111", "111111", "Rua C", "3333-3333",
 		"7777-7777", "Auxiliar", time.Now().AddDate(-25, 0, 0), time.Now(), 1800.00,
 	)
@@ -64,7 +64,7 @@ func TestUpdateFuncionario(t *testing.T) {
 }
 
 func TestDeleteFuncionario(t *testing.T) {
-	f := Entity.NewFuncionario(
+	f := entity.NewFuncionario(
 		"Ana Deletar", "2222222", "22222222222", "222222222", "222222", "Rua D", "4444-4444",
 		"6666-6666", "Técnico", time.Now().AddDate(-20, 0, 0), time.Now(), 2300.00,
 	)
@@ -84,7 +84,7 @@ func TestDeleteFuncionario(t *testing.T) {
 
 func TestListFuncionarios(t *testing.T) {
 	// Cria um funcionário de teste
-	f := Entity.NewFuncionario(
+	f := entity.NewFuncionario(
 		"Funcionario Listagem", "999", "888", "777", "666", "Rua Listagem", "1111-1111", "2222-2222",
 		"Auxiliar", time.Now().AddDate(-25, 0, 0), time.Now(), 2000.00,
 	)

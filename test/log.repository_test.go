@@ -8,10 +8,10 @@ import (
 
 var logUsuarioID int64
 var logEventoID int64 = 1 // ID de evento genérico para teste
-var logEntity *Entity.Log
+var logEntity *entity.Log
 
 func createLogUsuario(t *testing.T) int64 {
-	tempUser := Entity.NewUsuario("logtester", "1234", false)
+	tempUser := entity.NewUsuario("logtester", "1234", false)
 	err := repository.CreateUsuario(tempUser)
 	if err != nil {
 		// Se já existe, tenta buscar um existente com mesmo nome e usar seu ID
@@ -35,7 +35,7 @@ func createLogUsuario(t *testing.T) int64 {
 
 func TestCreateLog(t *testing.T) {
 	logUsuarioID = createLogUsuario(t)
-	log := Entity.NewLog(logUsuarioID, logEventoID, "Usuário testou a criação de log")
+	log := entity.NewLog(logUsuarioID, logEventoID, "Usuário testou a criação de log")
 	err := repository.CreateLog(log)
 	if err != nil {
 		t.Fatalf("erro ao criar log: %v", err)

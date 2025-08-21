@@ -1,14 +1,14 @@
 package repository
 
 import (
-	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/utils/dateStringToTime"
 	"fmt"
 	"log"
 )
 
 // CreateFalta cria um registro de falta
-func CreateFalta(f *Entity.Falta) error {
+func CreateFalta(f *entity.Falta) error {
 	query := `INSERT INTO falta (funcionarioID, quantidade, data) VALUES (?, ?, ?)`
 
 	result, err := DB.Exec(query, f.FuncionarioID, f.Quantidade, f.Mes)
@@ -25,7 +25,7 @@ func CreateFalta(f *Entity.Falta) error {
 }
 
 // GetFaltasByFuncionarioID busca todas as faltas de um funcionário
-func GetFaltasByFuncionarioID(funcionarioID int64) ([]Entity.Falta, error) {
+func GetFaltasByFuncionarioID(funcionarioID int64) ([]entity.Falta, error) {
 	query := `SELECT faltaID, funcionarioID, quantidade, data FROM falta WHERE funcionarioID = ?`
 
 	rows, err := DB.Query(query, funcionarioID)
@@ -38,9 +38,9 @@ func GetFaltasByFuncionarioID(funcionarioID int64) ([]Entity.Falta, error) {
 		}
 	}()
 
-	var faltas []Entity.Falta
+	var faltas []entity.Falta
 	for rows.Next() {
-		var f Entity.Falta
+		var f entity.Falta
 		var mesStr string
 
 		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Quantidade, &mesStr); err != nil {
@@ -64,7 +64,7 @@ func GetFaltasByFuncionarioID(funcionarioID int64) ([]Entity.Falta, error) {
 }
 
 // UpdateFalta atualiza um registro de falta
-func UpdateFalta(f *Entity.Falta) error {
+func UpdateFalta(f *entity.Falta) error {
 	query := `UPDATE falta SET quantidade = ?, data = ? WHERE faltaID = ?`
 	_, err := DB.Exec(query, f.Quantidade, f.Mes, f.ID)
 	if err != nil {
@@ -84,7 +84,7 @@ func DeleteFalta(id int64) error {
 }
 
 // ListFaltas lista todas as faltas
-func ListFaltas() ([]Entity.Falta, error) {
+func ListFaltas() ([]entity.Falta, error) {
 	query := `SELECT faltaID, funcionarioID, quantidade, data FROM falta`
 
 	rows, err := DB.Query(query)
@@ -97,9 +97,9 @@ func ListFaltas() ([]Entity.Falta, error) {
 		}
 	}()
 
-	var faltas []Entity.Falta
+	var faltas []entity.Falta
 	for rows.Next() {
-		var f Entity.Falta
+		var f entity.Falta
 		var mesStr string
 
 		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Quantidade, &mesStr); err != nil {

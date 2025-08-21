@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/utils/dateStringToTime"
 	"AutoGRH/pkg/utils/ptrToNullTime"
 	"database/sql"
@@ -10,7 +10,7 @@ import (
 )
 
 // CreateSalario cria um salário para um funcionário
-func CreateSalario(s *Entity.Salario) error {
+func CreateSalario(s *entity.Salario) error {
 	query := `INSERT INTO salario (funcionarioID, inicio, valor) VALUES (?, ?, ?)`
 
 	result, err := DB.Exec(query, s.FuncionarioID, s.Inicio, s.Valor)
@@ -26,7 +26,7 @@ func CreateSalario(s *Entity.Salario) error {
 }
 
 // GetSalariosByFuncionarioID retorna todos os salários de um funcionário (ordenados por início)
-func GetSalariosByFuncionarioID(funcionarioID int64) ([]Entity.Salario, error) {
+func GetSalariosByFuncionarioID(funcionarioID int64) ([]entity.Salario, error) {
 	query := `SELECT salarioID, funcionarioID, inicio, fim, valor
 	          FROM salario WHERE funcionarioID = ? ORDER BY inicio ASC`
 
@@ -40,9 +40,9 @@ func GetSalariosByFuncionarioID(funcionarioID int64) ([]Entity.Salario, error) {
 		}
 	}()
 
-	var salarios []Entity.Salario
+	var salarios []entity.Salario
 	for rows.Next() {
-		var s Entity.Salario
+		var s entity.Salario
 		var inicioStr string
 		var fimStr sql.NullString
 
@@ -74,7 +74,7 @@ func GetSalariosByFuncionarioID(funcionarioID int64) ([]Entity.Salario, error) {
 }
 
 // UpdateSalario atualiza um salário
-func UpdateSalario(s *Entity.Salario) error {
+func UpdateSalario(s *entity.Salario) error {
 	query := `UPDATE salario SET valor = ?, inicio = ?, fim = ? WHERE salarioID = ?`
 	_, err := DB.Exec(query, s.Valor, s.Inicio, ptrToNullTime.PtrToNullTime(s.Fim), s.ID)
 	if err != nil {

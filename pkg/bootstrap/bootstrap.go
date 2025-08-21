@@ -3,11 +3,13 @@ package Bootstrap
 import (
 	"context"
 	"os"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"AutoGRH/pkg/Adapter"
-	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/repository"
 	"AutoGRH/pkg/service"
 	jwtm "AutoGRH/pkg/service/jwt"
@@ -44,12 +46,48 @@ func getenvInt64Default(k string, def int64) int64 {
 	return def
 }
 
+func parseCutoffHours(s string) []int {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return []int{12, 19}
+	}
+	parts := strings.FieldsFunc(s, func(r rune) bool {
+		switch r {
+		case ',', ';', '|', ' ':
+			return true
+		}
+		return false
+	})
+
+	seen := make(map[int]struct{})
+	hours := make([]int, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if n, err := strconv.Atoi(p); err == nil && n >= 0 && n <= 23 {
+			if _, ok := seen[n]; !ok {
+				seen[n] = struct{}{}
+				hours = append(hours, n)
+			}
+		}
+	}
+	if len(hours) == 0 {
+		return []int{12, 19}
+	}
+	sort.Ints(hours)
+	return hours
+}
+
 func Load() AppConfig {
 	issuer := getenvDefault("JWT_ISSUER", "AutoGRH")
 	ttlH := getenvIntDefault("JWT_EXPIRES_IN_HOURS", 6)
 	skewS := getenvIntDefault("JWT_CLOCK_SKEW_SECONDS", 60)
 	successID := getenvInt64Default("EVENT_LOGIN_SUCCESS_ID", 1)
 	failID := getenvInt64Default("EVENT_LOGIN_FAIL_ID", 2)
+	tz := getenvDefault("AUTH_TIMEZONE", "America/Campo_Grande")
+	cutoffs := parseCutoffHours(getenvDefault("AUTH_CUTOFF_HOURS", "12,19"))
 
 	cfg := service.AuthConfig{
 		Issuer:          issuer,
@@ -57,8 +95,8 @@ func Load() AppConfig {
 		ClockSkew:       time.Duration(skewS) * time.Second,
 		LoginSuccessEvt: successID,
 		LoginFailEvt:    failID,
-		Timezone:        "America/Campo_Grande",
-		CutoffHours:     []int{12, 19},
+		Timezone:        tz,
+		CutoffHours:     cutoffs,
 	}
 
 	perms := service.PermissionMap{
@@ -84,7 +122,7 @@ func ConnectDB() error {
 func BuildAuth(app AppConfig) *service.AuthService {
 	tm := jwtm.NewHS256Manager([]byte(app.JWTSecret))
 	userRepo := Adapter.NewUserRepositoryAdapter(repository.GetUsuarioByUsername, nil)
-	createLog := func(ctx context.Context, l *Entity.Log) (int64, error) { return 0, repository.CreateLog(l) }
+	createLog := func(ctx context.Context, l *entity.Log) (int64, error) { return 0, repository.CreateLog(l) }
 	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
 	return service.NewAuthService(userRepo, logRepo, tm, app.Auth, app.Perms)
 }

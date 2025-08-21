@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/utils/dateStringToTime"
 	"AutoGRH/pkg/utils/nullTimeToPtr"
 	"AutoGRH/pkg/utils/ptrToNullTime"
@@ -11,7 +11,7 @@ import (
 )
 
 // CreateFuncionario cria um novo funcionário no banco
-func CreateFuncionario(f *Entity.Funcionario) error {
+func CreateFuncionario(f *entity.Funcionario) error {
 	query := `INSERT INTO funcionario (
 		nome, rg, cpf, pis, ctpf, endereco, contato, contatoEmergencia,
 		nascimento, admissao, demissao, cargo, salarioInicial, feriasDisponiveis)
@@ -34,14 +34,14 @@ func CreateFuncionario(f *Entity.Funcionario) error {
 }
 
 // GetFuncionarioByID busca um funcionário pelo ID com todos os relacionamentos
-func GetFuncionarioByID(id int64) (*Entity.Funcionario, error) {
+func GetFuncionarioByID(id int64) (*entity.Funcionario, error) {
 	query := `SELECT funcionarioID, nome, rg, cpf, pis, ctpf, endereco, contato,
 		contatoEmergencia, nascimento, admissao, demissao, cargo, salarioInicial, feriasDisponiveis
 		FROM funcionario WHERE funcionarioID = ?`
 
 	row := DB.QueryRow(query, id)
 
-	var f Entity.Funcionario
+	var f entity.Funcionario
 	var nascimentoStr, admissaoStr string
 	var demissao sql.NullTime
 
@@ -75,7 +75,7 @@ func GetFuncionarioByID(id int64) (*Entity.Funcionario, error) {
 	return &f, nil
 }
 
-func carregarRelacionamentos(f *Entity.Funcionario) error {
+func carregarRelacionamentos(f *entity.Funcionario) error {
 	if ferias, err := GetFeriasByFuncionarioID(f.ID); err == nil {
 		for _, fr := range ferias {
 			f.Ferias = append(f.Ferias, *fr)
@@ -112,7 +112,7 @@ func carregarRelacionamentos(f *Entity.Funcionario) error {
 }
 
 // UpdateFuncionario atualiza os dados de um funcionário
-func UpdateFuncionario(f *Entity.Funcionario) error {
+func UpdateFuncionario(f *entity.Funcionario) error {
 	query := `UPDATE funcionario SET
 		nome = ?, rg = ?, cpf = ?, pis = ?, ctpf = ?, endereco = ?, contato = ?,
 		contatoEmergencia = ?, nascimento = ?, admissao = ?, demissao = ?,
@@ -141,7 +141,7 @@ func DeleteFuncionario(id int64) error {
 }
 
 // ListFuncionarios retorna uma lista leve de funcionários
-func ListFuncionarios() ([]*Entity.Funcionario, error) {
+func ListFuncionarios() ([]*entity.Funcionario, error) {
 	query := `SELECT funcionarioID, nome FROM funcionario`
 
 	rows, err := DB.Query(query)
@@ -153,9 +153,9 @@ func ListFuncionarios() ([]*Entity.Funcionario, error) {
 			log.Printf("erro ao fechar rows em ListFuncionarios: %v", cerr)
 		}
 	}()
-	var lista []*Entity.Funcionario
+	var lista []*entity.Funcionario
 	for rows.Next() {
-		var f Entity.Funcionario
+		var f entity.Funcionario
 		err := rows.Scan(&f.ID, &f.Nome)
 		if err != nil {
 			return nil, fmt.Errorf("erro ao ler funcionário: %w", err)

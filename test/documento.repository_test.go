@@ -8,10 +8,10 @@ import (
 )
 
 var documentoFuncionarioID int64
-var documentoCriado Entity.Documento
+var documentoCriado entity.Documento
 
 func createDocumentoFuncionario(t *testing.T) {
-	funcionario := Entity.NewFuncionario(
+	funcionario := entity.NewFuncionario(
 		"Funcionario Documento", "12345678", "99999999900", "123456789", "111111", "Rua A", "1234-5678",
 		"9999-9999", "Analista", fakeDate(25), now(), 3000.00,
 	)
@@ -24,7 +24,7 @@ func createDocumentoFuncionario(t *testing.T) {
 
 func TestCreateDocumento(t *testing.T) {
 	createDocumentoFuncionario(t)
-	doc := &Entity.Documento{
+	doc := &entity.Documento{
 		FuncionarioID: documentoFuncionarioID,
 		Doc:           []byte("RG escaneado"),
 	}

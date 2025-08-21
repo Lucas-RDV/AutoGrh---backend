@@ -8,6 +8,7 @@ import (
 
 	"AutoGRH/pkg/Bootstrap"
 	"AutoGRH/pkg/HTTP/router"
+	middleware "AutoGRH/pkg/controller/middleware"
 )
 
 func main() {
@@ -19,7 +20,15 @@ func main() {
 	}
 
 	auth := Bootstrap.BuildAuth(app)
-	mux := router.New(auth)
+	routes := router.New(auth)
 
-	http.ListenAndServe(":8080", mux)
+	cors := middleware.NewCORS(middleware.CORSConfig{
+
+		AllowedOrigins:   []string{"*"}, // aceita todos para teste. mudar depois
+		AllowedMethods:   nil,           // default
+		AllowedHeaders:   nil,           // default
+		AllowCredentials: false,
+	})
+
+	http.ListenAndServe(":8080", cors(routes))
 }

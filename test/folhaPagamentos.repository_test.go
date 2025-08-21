@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-var folhaCriada *Entity.FolhaPagamentos
+var folhaCriada *entity.FolhaPagamentos
 
 func TestCreateFolha(t *testing.T) {
-	folha := Entity.NewFolhaPagamentos(time.Now())
+	folha := entity.NewFolhaPagamentos(time.Now())
 	err := repository.CreateFolha(folha)
 	if err != nil {
 		t.Fatalf("erro ao criar folha: %v", err)

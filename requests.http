@@ -1,9 +1,97 @@
-### Login
+### LOGIN - ADMIN
 POST http://localhost:8080/auth/login
 Content-Type: application/json
 
-{ "login": "admin", "senha": "adm123" }
+{
+  "login": "admin",
+  "senha": "adm123"
+}
 
-### /me (protegida) — cole o token retornado no login abaixo
-GET http://localhost:8080/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTUzMjIxNTEsImlhdCI6MTc1NTMwMDU1MX0.ZPIEZjQ5a1cdMnHWtbXDjJBVR01hkSepuWioZBUP0QU
+### LOGIN - USUÁRIO COMUM
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "login": "teste",
+  "senha": "teste123"
+}
+
+### [ADMIN] Listar usuários
+GET http://localhost:8080/admin/usuarios
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTU4MTcyMDAsImlhdCI6MTc1NTc5NzQ5OX0.DxWJmDNyGkD3ewB61Rb0QkTrB5IsVUgdwMOrGl-LbaA
+
+### [ADMIN] Criar novo usuário - sucesso
+POST http://localhost:8080/admin/usuarios
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTU4MTcyMDAsImlhdCI6MTc1NTc5NzQ5OX0.DxWJmDNyGkD3ewB61Rb0QkTrB5IsVUgdwMOrGl-LbaA
+
+{
+  "username": "teste4",
+  "password": "teste",
+  "isAdmin": false
+}
+
+### [ADMIN] Criar usuário já existente (ativo) - deve falhar
+POST http://localhost:8080/admin/usuarios
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTU4MTcyMDAsImlhdCI6MTc1NTc5NzQ5OX0.DxWJmDNyGkD3ewB61Rb0QkTrB5IsVUgdwMOrGl-LbaA
+
+{
+  "username": "teste2",
+  "password": "qualquer",
+  "isAdmin": false
+}
+
+### [ADMIN] Criar usuário já existente (inativo) - reativação
+POST http://localhost:8080/admin/usuarios
+Content-Type: application/json
+Authorization: Bearer {{ADMIN_TOKEN}}
+
+{
+  "username": "inativo",
+  "password": "novaSenha",
+  "isAdmin": false
+}
+
+### [ADMIN] Atualizar usuário
+PUT http://localhost:8080/admin/usuarios/2
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTU4MTcyMDAsImlhdCI6MTc1NTc5NzQ5OX0.DxWJmDNyGkD3ewB61Rb0QkTrB5IsVUgdwMOrGl-LbaA
+
+{
+  "password": "teste123"
+}
+
+### [ADMIN] Excluir usuário
+DELETE http://localhost:8080/admin/usuarios/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTU4MTcyMDAsImlhdCI6MTc1NTc5NzQ5OX0.DxWJmDNyGkD3ewB61Rb0QkTrB5IsVUgdwMOrGl-LbaA
+
+### [COMMON USER] Listar usuários - deve falhar
+GET http://localhost:8080/admin/usuarios
+Authorization: Bearer {{USUARIO_TOKEN}}
+
+### [COMMON USER] Criar usuário - deve falhar
+POST http://localhost:8080/admin/usuarios
+Content-Type: application/json
+Authorization: Bearer {{USUARIO_TOKEN}}
+
+{
+  "username": "tentativa",
+  "password": "invalida",
+  "isAdmin": false
+}
+
+### [TOKEN INVÁLIDO] Malformado
+GET http://localhost:8080/admin/usuarios
+Authorization: Bearer XYZ123INVALIDTOKEN
+
+### [TOKEN AUSENTE]
+GET http://localhost:8080/admin/usuarios
+
+### [PREFIXO ERRADO]
+GET http://localhost:8080/admin/usuarios
+Authorization: Token {{ADMIN_TOKEN}}
+
+### [TOKEN EXPIRADO] - simulação
+GET http://localhost:8080/admin/usuarios
+Authorization: Bearer {{EXPIRED_TOKEN}}

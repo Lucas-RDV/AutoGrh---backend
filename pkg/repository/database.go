@@ -69,7 +69,8 @@ func createTables() {
 			usuarioID BIGINT AUTO_INCREMENT PRIMARY KEY,
 			username VARCHAR(15) UNIQUE,
 			password VARCHAR(255),
-			isAdmin BOOLEAN
+			isAdmin BOOLEAN,
+			ativo BOOLEAN NOT NULL DEFAULT TRUE
 		);`,
 
 		`CREATE TABLE IF NOT EXISTS evento (

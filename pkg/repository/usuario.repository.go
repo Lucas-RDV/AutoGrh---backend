@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/entity"
 	"context"
 	"database/sql"
 	"errors"
@@ -11,7 +11,7 @@ import (
 )
 
 // CreateUsuario cria um novo usuário no banco
-func CreateUsuario(u *Entity.Usuario) error {
+func CreateUsuario(u *entity.Usuario) error {
 	query := `INSERT INTO usuario (username, password, isAdmin) VALUES (?, ?, ?)`
 	result, err := DB.Exec(query, u.Username, u.Password, u.IsAdmin)
 	if err != nil {
@@ -27,11 +27,11 @@ func CreateUsuario(u *Entity.Usuario) error {
 }
 
 // GetUsuarioByID busca um usuário pelo ID
-func GetUsuarioByID(id int64) (*Entity.Usuario, error) {
-	query := `SELECT usuarioID, username, password, isAdmin FROM usuario WHERE usuarioID = ?`
+func GetUsuarioByID(id int64) (*entity.Usuario, error) {
+	query := `SELECT usuarioID, username, password, isAdmin FROM usuario WHERE usuarioID = ? AND ativo = TRUE`
 	row := DB.QueryRow(query, id)
 
-	var u Entity.Usuario
+	var u entity.Usuario
 	if err := row.Scan(&u.ID, &u.Username, &u.Password, &u.IsAdmin); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -42,7 +42,7 @@ func GetUsuarioByID(id int64) (*Entity.Usuario, error) {
 }
 
 // UpdateUsuario atualiza um usuário existente
-func UpdateUsuario(u *Entity.Usuario) error {
+func UpdateUsuario(u *entity.Usuario) error {
 	query := `UPDATE usuario SET username = ?, password = ?, isAdmin = ? WHERE usuarioID = ?`
 	_, err := DB.Exec(query, u.Username, u.Password, u.IsAdmin, u.ID)
 	if err != nil {
@@ -51,19 +51,19 @@ func UpdateUsuario(u *Entity.Usuario) error {
 	return nil
 }
 
-// DeleteUsuario remove um usuário pelo ID
+// DeleteUsuario desativa um usuário pelo ID
 func DeleteUsuario(id int64) error {
-	query := `DELETE FROM usuario WHERE usuarioID = ?`
+	query := `UPDATE usuario SET ativo = FALSE WHERE usuarioID = ?`
 	_, err := DB.Exec(query, id)
 	if err != nil {
-		return fmt.Errorf("erro ao deletar usuário: %w", err)
+		return fmt.Errorf("erro ao desativar usuário: %w", err)
 	}
 	return nil
 }
 
 // GetAllUsuarios lista todos os usuários
-func GetAllUsuarios() ([]*Entity.Usuario, error) {
-	query := `SELECT usuarioID, username, password, isAdmin FROM usuario`
+func GetAllUsuarios() ([]*entity.Usuario, error) {
+	query := `SELECT usuarioID, username, password, isAdmin FROM usuario WHERE ativo = TRUE`
 
 	rows, err := DB.Query(query)
 	if err != nil {
@@ -75,9 +75,9 @@ func GetAllUsuarios() ([]*Entity.Usuario, error) {
 		}
 	}()
 
-	var usuarios []*Entity.Usuario
+	var usuarios []*entity.Usuario
 	for rows.Next() {
-		var u Entity.Usuario
+		var u entity.Usuario
 		if err := rows.Scan(&u.ID, &u.Username, &u.Password, &u.IsAdmin); err != nil {
 			log.Printf("erro ao ler linha de usuário: %v", err)
 			continue
@@ -90,7 +90,7 @@ func GetAllUsuarios() ([]*Entity.Usuario, error) {
 	return usuarios, nil
 }
 
-func GetUsuarioByUsername(ctx context.Context, username string) (*Entity.Usuario, error) {
+func GetUsuarioByUsername(ctx context.Context, username string) (*entity.Usuario, error) {
 	if DB == nil {
 		return nil, errors.New("repository DB não inicializado")
 	}
@@ -99,10 +99,10 @@ func GetUsuarioByUsername(ctx context.Context, username string) (*Entity.Usuario
 		return nil, nil // nada a buscar
 	}
 
-	const q = `SELECT usuarioID, username, password, isAdmin FROM usuario WHERE username = ? LIMIT 1`
+	const q = `SELECT usuarioID, username, password, isAdmin FROM usuario WHERE username = ? = TRUE LIMIT 1`
 	row := DB.QueryRowContext(ctx, q, u)
 
-	var out Entity.Usuario
+	var out entity.Usuario
 	if err := row.Scan(&out.ID, &out.Username, &out.Password, &out.IsAdmin); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil

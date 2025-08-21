@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"AutoGRH/pkg/controller/httpjson"
 	"AutoGRH/pkg/service"
 )
 
@@ -21,35 +22,42 @@ func GetClaims(ctx context.Context) (service.Claims, bool) {
 	return c, ok
 }
 
-func RequireAuth(auth *service.AuthService, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := extractBearer(r.Header.Get("Authorization"))
-		if token == "" {
-			http.Error(w, "token ausente", http.StatusUnauthorized)
-			return
-		}
-		claims, err := auth.ValidateToken(r.Context(), token)
-		if err != nil {
-			http.Error(w, "token inválido", http.StatusUnauthorized)
-			return
-		}
-		next.ServeHTTP(w, r.WithContext(WithClaims(r.Context(), claims)))
-	})
+// Agora compatível com chi.Use()
+func RequireAuth(auth *service.AuthService) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			token := extractBearer(r.Header.Get("Authorization"))
+			if token == "" {
+				httpjson.Unauthorized(w, "TOKEN_MISSING", "token ausente")
+				return
+			}
+			claims, err := auth.ValidateToken(r.Context(), token)
+			if err != nil {
+				httpjson.Unauthorized(w, "TOKEN_INVALID", "token inválido")
+				return
+			}
+			ctxWithClaims := WithClaims(r.Context(), claims)
+			next.ServeHTTP(w, r.WithContext(ctxWithClaims))
+		})
+	}
 }
 
-func RequirePerm(auth *service.AuthService, perm string, next http.Handler) http.Handler {
-	return RequireAuth(auth, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := GetClaims(r.Context())
-		if !ok {
-			http.Error(w, "sem claims", http.StatusUnauthorized)
-			return
-		}
-		if err := auth.Authorize(r.Context(), claims, perm); err != nil {
-			http.Error(w, "não autorizado", http.StatusForbidden)
-			return
-		}
-		next.ServeHTTP(w, r)
-	}))
+// Agora compatível com chi.Use()
+func RequirePerm(auth *service.AuthService, perm string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return RequireAuth(auth)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			claims, ok := GetClaims(r.Context())
+			if !ok {
+				httpjson.Unauthorized(w, "NO_CLAIMS", "sem claims")
+				return
+			}
+			if err := auth.Authorize(r.Context(), claims, perm); err != nil {
+				httpjson.Forbidden(w, "não autorizado")
+				return
+			}
+			next.ServeHTTP(w, r)
+		}))
+	}
 }
 
 func extractBearer(h string) string {

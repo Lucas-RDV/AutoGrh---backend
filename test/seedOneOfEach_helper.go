@@ -20,13 +20,13 @@ func SeedOneOfEach() {
 	}
 
 	// 1) Usuario
-	u := Entity.NewUsuario("seed_user", "seed_pass", true)
+	u := entity.NewUsuario("seed_user", "seed_pass", true)
 	if err := repository.CreateUsuario(u); err != nil {
 		log.Fatal(fmt.Errorf("seed usuario: %w", err))
 	}
 
 	// 2) Funcionario
-	f := Entity.NewFuncionario(
+	f := entity.NewFuncionario(
 		"Funcionario Seed", "RG000", "CPF000", "PIS000", "CTPF000",
 		"Rua Seed, 123", "(11)1111-1111", "(11)2222-2222", "Analista",
 		time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -38,19 +38,19 @@ func SeedOneOfEach() {
 	}
 
 	// 3) Salario (vigente)
-	s := Entity.NewSalario(f.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), 4000.00)
+	s := entity.NewSalario(f.ID, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), 4000.00)
 	if err := repository.CreateSalario(s); err != nil {
 		log.Fatal(fmt.Errorf("seed salario: %w", err))
 	}
 
 	// 4) Documento
-	doc := Entity.NewDocumento([]byte("documento de teste"), f.ID)
+	doc := entity.NewDocumento([]byte("documento de teste"), f.ID)
 	if err := repository.CreateDocumento(doc); err != nil {
 		log.Fatal(fmt.Errorf("seed documento: %w", err))
 	}
 
 	// 5) Férias
-	fer := &Entity.Ferias{
+	fer := &entity.Ferias{
 		FuncionarioID: f.ID,
 		Dias:          30,
 		Inicio:        time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -63,7 +63,7 @@ func SeedOneOfEach() {
 	}
 
 	// 6) Descanso (parcial das férias)
-	des := Entity.NewDescanso(
+	des := entity.NewDescanso(
 		time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
 		time.Date(2024, 2, 5, 0, 0, 0, 0, time.UTC),
 		fer.ID,
@@ -73,19 +73,19 @@ func SeedOneOfEach() {
 	}
 
 	// 7) Falta (1 no mês)
-	fal := Entity.NewFalta(1, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), f.ID)
+	fal := entity.NewFalta(1, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), f.ID)
 	if err := repository.CreateFalta(fal); err != nil {
 		log.Fatal(fmt.Errorf("seed falta: %w", err))
 	}
 
 	// 8) Folha de Pagamentos
-	folha := Entity.NewFolhaPagamentos(time.Date(2024, 1, 31, 0, 0, 0, 0, time.UTC))
+	folha := entity.NewFolhaPagamentos(time.Date(2024, 1, 31, 0, 0, 0, 0, time.UTC))
 	if err := repository.CreateFolha(folha); err != nil {
 		log.Fatal(fmt.Errorf("seed folha_pagamento: %w", err))
 	}
 
 	// 9) Pagamento (tipo salário)
-	pay := Entity.NewPagamento(tipoSalarioID, time.Date(2024, 1, 31, 0, 0, 0, 0, time.UTC), 1000.00)
+	pay := entity.NewPagamento(tipoSalarioID, time.Date(2024, 1, 31, 0, 0, 0, 0, time.UTC), 1000.00)
 	pay.FuncionarioID = f.ID
 	pay.FolhaID = folha.ID
 	if err := repository.CreatePagamento(pay); err != nil {
@@ -93,13 +93,13 @@ func SeedOneOfEach() {
 	}
 
 	// 10) Vale
-	vale := Entity.NewVale(f.ID, 500.00, time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC))
+	vale := entity.NewVale(f.ID, 500.00, time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC))
 	if err := repository.CreateVale(vale); err != nil {
 		log.Fatal(fmt.Errorf("seed vale: %w", err))
 	}
 
 	// 11) Log (evento CRIAR)
-	lg := Entity.NewLog(u.ID, eventoCriarID, "seed inicial")
+	lg := entity.NewLog(u.ID, eventoCriarID, "seed inicial")
 	if err := repository.CreateLog(lg); err != nil {
 		log.Fatal(fmt.Errorf("seed log: %w", err))
 	}

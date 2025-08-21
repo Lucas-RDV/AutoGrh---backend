@@ -1,6 +1,7 @@
-package Controller
+package controller
 
 import (
+	"AutoGRH/pkg/controller/httpjson"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -30,19 +31,18 @@ type loginResponse struct {
 func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "JSON inválido", http.StatusBadRequest)
+		httpjson.BadRequest(w, "Request inválido")
 		return
 	}
 	if req.Login == "" || req.Senha == "" {
-		http.Error(w, "login e senha são obrigatórios", http.StatusBadRequest)
+		httpjson.BadRequest(w, "login e senha são obrigatórios")
 		return
 	}
 	tok, exp, user, err := c.auth.Login(r.Context(), req.Login, req.Senha)
 	if err != nil {
-		http.Error(w, "credenciais inválidas", http.StatusUnauthorized)
+		httpjson.Unauthorized(w, "INVALID_CREDENTIALS", "credenciais inválidas")
 		return
 	}
 	resp := loginResponse{Token: tok, ExpiresAt: exp, Usuario: user}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(resp)
+	httpjson.WriteJSON(w, http.StatusOK, resp)
 }

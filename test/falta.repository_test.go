@@ -8,13 +8,13 @@ import (
 )
 
 func TestCreateFalta(t *testing.T) {
-	funcionario := Entity.NewFuncionario("Falta Nome", "RG", "CPF", "PIS", "CTPF", "End", "Contato", "Emergência", "Cargo", time.Now().AddDate(-30, 0, 0), time.Now(), 1000)
+	funcionario := entity.NewFuncionario("Falta Nome", "RG", "CPF", "PIS", "CTPF", "End", "Contato", "Emergência", "Cargo", time.Now().AddDate(-30, 0, 0), time.Now(), 1000)
 	err := repository.CreateFuncionario(funcionario)
 	if err != nil {
 		t.Fatalf("erro ao criar funcionario: %v", err)
 	}
 
-	falta := &Entity.Falta{
+	falta := &entity.Falta{
 		FuncionarioID: funcionario.ID,
 		Quantidade:    2,
 		Mes:           time.Now(),
@@ -29,13 +29,13 @@ func TestCreateFalta(t *testing.T) {
 }
 
 func TestGetFaltasByFuncionarioID(t *testing.T) {
-	funcionario := Entity.NewFuncionario("Falta Get", "RG", "CPF", "PIS", "CTPF", "End", "Contato", "Emergência", "Cargo", time.Now().AddDate(-30, 0, 0), time.Now(), 1000)
+	funcionario := entity.NewFuncionario("Falta Get", "RG", "CPF", "PIS", "CTPF", "End", "Contato", "Emergência", "Cargo", time.Now().AddDate(-30, 0, 0), time.Now(), 1000)
 	err := repository.CreateFuncionario(funcionario)
 	if err != nil {
 		t.Fatalf("erro ao criar funcionario: %v", err)
 	}
 
-	falta := &Entity.Falta{
+	falta := &entity.Falta{
 		FuncionarioID: funcionario.ID,
 		Quantidade:    3,
 		Mes:           time.Now(),
@@ -55,10 +55,10 @@ func TestGetFaltasByFuncionarioID(t *testing.T) {
 }
 
 func TestUpdateFalta(t *testing.T) {
-	funcionario := Entity.NewFuncionario("Falta Update", "RG", "CPF", "PIS", "CTPF", "End", "Contato", "Emergência", "Cargo", time.Now().AddDate(-30, 0, 0), time.Now(), 1000)
+	funcionario := entity.NewFuncionario("Falta Update", "RG", "CPF", "PIS", "CTPF", "End", "Contato", "Emergência", "Cargo", time.Now().AddDate(-30, 0, 0), time.Now(), 1000)
 	repository.CreateFuncionario(funcionario)
 
-	falta := &Entity.Falta{
+	falta := &entity.Falta{
 		FuncionarioID: funcionario.ID,
 		Quantidade:    1,
 		Mes:           time.Now(),
@@ -74,10 +74,10 @@ func TestUpdateFalta(t *testing.T) {
 }
 
 func TestDeleteFalta(t *testing.T) {
-	funcionario := Entity.NewFuncionario("Falta Delete", "RG", "CPF", "PIS", "CTPF", "End", "Contato", "Emergência", "Cargo", time.Now().AddDate(-30, 0, 0), time.Now(), 1000)
+	funcionario := entity.NewFuncionario("Falta Delete", "RG", "CPF", "PIS", "CTPF", "End", "Contato", "Emergência", "Cargo", time.Now().AddDate(-30, 0, 0), time.Now(), 1000)
 	repository.CreateFuncionario(funcionario)
 
-	falta := &Entity.Falta{
+	falta := &entity.Falta{
 		FuncionarioID: funcionario.ID,
 		Quantidade:    4,
 		Mes:           time.Now(),
@@ -99,7 +99,7 @@ func TestDeleteFalta(t *testing.T) {
 
 func TestListFaltas(t *testing.T) {
 	// Cria funcionário
-	funcionario := Entity.NewFuncionario(
+	funcionario := entity.NewFuncionario(
 		"Falta Teste", "123", "456", "789", "000", "Rua Teste", "1111", "2222", "Operador",
 		time.Now().AddDate(-20, 0, 0), time.Now(), 1500.0,
 	)
@@ -109,7 +109,7 @@ func TestListFaltas(t *testing.T) {
 	}
 
 	// Cria falta
-	f := &Entity.Falta{
+	f := &entity.Falta{
 		FuncionarioID: funcionario.ID,
 		Quantidade:    1,
 		Mes:           time.Now(),

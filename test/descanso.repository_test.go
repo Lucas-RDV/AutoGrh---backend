@@ -8,11 +8,11 @@ import (
 )
 
 var descansoID int64
-var descansoEntity *Entity.Descanso
+var descansoEntity *entity.Descanso
 
-func createTestDescanso(t *testing.T) *Entity.Descanso {
+func createTestDescanso(t *testing.T) *entity.Descanso {
 	// Criação de férias para o descanso
-	f := &Entity.Ferias{
+	f := &entity.Ferias{
 		FuncionarioID: 1,
 		Dias:          30,
 		Inicio:        time.Now(),
@@ -25,7 +25,7 @@ func createTestDescanso(t *testing.T) *Entity.Descanso {
 		t.Fatalf("erro ao criar ferias: %v", err)
 	}
 
-	d := &Entity.Descanso{
+	d := &entity.Descanso{
 		FeriasID: f.ID,
 		Inicio:   time.Now(),
 		Fim:      time.Now().AddDate(0, 0, 5),

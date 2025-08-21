@@ -1,4 +1,4 @@
-package Entity
+package entity
 
 // Documento representa um arquivo/documento associado a um funcionário
 // Pode ser um comprovante, contrato, atestado, etc.

@@ -8,10 +8,10 @@ import (
 )
 
 var pagamentoFuncionarioID int64
-var pagamentoEntity Entity.Pagamento
+var pagamentoEntity entity.Pagamento
 
 func createPagamentoFuncionario(t *testing.T) {
-	funcionario := Entity.NewFuncionario(
+	funcionario := entity.NewFuncionario(
 		"Teste", "123", "456", "789", "000", "Rua Teste", "9999", "8888", "Cargo",
 		time.Now().AddDate(-30, 0, 0), time.Now(), 3000.0,
 	)
@@ -31,7 +31,7 @@ func GetTipoPagamentoID(tipo string) (int64, error) {
 
 func TestCreatePagamento(t *testing.T) {
 	createPagamentoFuncionario(t)
-	folha := Entity.NewFolhaPagamentos(time.Now())
+	folha := entity.NewFolhaPagamentos(time.Now())
 	err := repository.CreateFolha(folha)
 	if err != nil {
 		t.Fatalf("erro ao criar folha: %v", err)
@@ -40,7 +40,7 @@ func TestCreatePagamento(t *testing.T) {
 	if err != nil {
 		t.Fatalf("erro ao obter tipo_pagamento: %v", err)
 	}
-	p := Entity.NewPagamento(tipoID, time.Now(), 3000.00)
+	p := entity.NewPagamento(tipoID, time.Now(), 3000.00)
 	p.FuncionarioID = pagamentoFuncionarioID
 	p.FolhaID = folha.ID
 	err = repository.CreatePagamento(p)
@@ -55,7 +55,7 @@ func TestCreatePagamento(t *testing.T) {
 
 func TestGetPagamentosByFuncionarioID(t *testing.T) {
 	// Cria um funcionário de teste
-	funcionario := Entity.NewFuncionario(
+	funcionario := entity.NewFuncionario(
 		"Funcionario Pagamento", "12345678", "99999999900", "123456789", "111111", "Rua A", "1234-5678",
 		"9999-9999", "Analista", time.Now().AddDate(-25, 0, 0), time.Now(), 3000.00,
 	)
@@ -65,7 +65,7 @@ func TestGetPagamentosByFuncionarioID(t *testing.T) {
 	}
 
 	// Cria uma folha de pagamento
-	folha := Entity.NewFolhaPagamentos(time.Now())
+	folha := entity.NewFolhaPagamentos(time.Now())
 	err = repository.CreateFolha(folha)
 	if err != nil {
 		t.Fatalf("erro ao criar folha: %v", err)
@@ -78,7 +78,7 @@ func TestGetPagamentosByFuncionarioID(t *testing.T) {
 	}
 
 	// Cria um pagamento
-	p := Entity.NewPagamento(tipoID, time.Now(), 3000.00)
+	p := entity.NewPagamento(tipoID, time.Now(), 3000.00)
 	p.FuncionarioID = funcionario.ID
 	p.FolhaID = folha.ID
 
@@ -142,7 +142,7 @@ func TestDeletePagamento(t *testing.T) {
 
 func TestListPagamentos(t *testing.T) {
 	// Cria um funcionário
-	funcionario := Entity.NewFuncionario(
+	funcionario := entity.NewFuncionario(
 		"Funcionario List", "12345678", "88888888800", "222222222", "333333", "Rua B", "4444-5555",
 		"5555-6666", "Desenvolvedor", time.Now().AddDate(-28, 0, 0), time.Now(), 3200.00,
 	)
@@ -152,7 +152,7 @@ func TestListPagamentos(t *testing.T) {
 	}
 
 	// Cria folha
-	folha := Entity.NewFolhaPagamentos(time.Now())
+	folha := entity.NewFolhaPagamentos(time.Now())
 	err = repository.CreateFolha(folha)
 	if err != nil {
 		t.Fatalf("erro ao criar folha: %v", err)
@@ -165,7 +165,7 @@ func TestListPagamentos(t *testing.T) {
 	}
 
 	// Cria pagamento
-	p := Entity.NewPagamento(tipoID, time.Now(), 3200.00)
+	p := entity.NewPagamento(tipoID, time.Now(), 3200.00)
 	p.FuncionarioID = funcionario.ID
 	p.FolhaID = folha.ID
 

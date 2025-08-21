@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"AutoGRH/pkg/Entity"
+	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/utils/dateStringToTime"
 	"database/sql"
 	"fmt"
@@ -9,7 +9,7 @@ import (
 )
 
 // CreateVale cria um novo vale
-func CreateVale(v *Entity.Vale) error {
+func CreateVale(v *entity.Vale) error {
 	query := `INSERT INTO vale (funcionarioID, valor, data, aprovado, pago) VALUES (?, ?, ?, ?, ?)`
 
 	result, err := DB.Exec(query, v.FuncionarioID, v.Valor, v.Data, v.Aprovado, v.Pago)
@@ -26,11 +26,11 @@ func CreateVale(v *Entity.Vale) error {
 }
 
 // GetValeByID busca um vale por ID
-func GetValeByID(id int64) (*Entity.Vale, error) {
+func GetValeByID(id int64) (*entity.Vale, error) {
 	query := `SELECT valeID, funcionarioID, valor, data, aprovado, pago FROM vale WHERE valeID = ?`
 	row := DB.QueryRow(query, id)
 
-	var v Entity.Vale
+	var v entity.Vale
 	var dataStr string
 	if err := row.Scan(&v.ID, &v.FuncionarioID, &v.Valor, &dataStr, &v.Aprovado, &v.Pago); err != nil {
 		if err == sql.ErrNoRows {
@@ -49,7 +49,7 @@ func GetValeByID(id int64) (*Entity.Vale, error) {
 }
 
 // GetValesByFuncionarioID lista todos os vales de um funcionário
-func GetValesByFuncionarioID(funcionarioID int64) ([]Entity.Vale, error) {
+func GetValesByFuncionarioID(funcionarioID int64) ([]entity.Vale, error) {
 	query := `SELECT valeID, funcionarioID, valor, data, aprovado, pago FROM vale WHERE funcionarioID = ?`
 
 	rows, err := DB.Query(query, funcionarioID)
@@ -62,9 +62,9 @@ func GetValesByFuncionarioID(funcionarioID int64) ([]Entity.Vale, error) {
 		}
 	}()
 
-	var vales []Entity.Vale
+	var vales []entity.Vale
 	for rows.Next() {
-		var v Entity.Vale
+		var v entity.Vale
 		var dataStr string
 		if err := rows.Scan(&v.ID, &v.FuncionarioID, &v.Valor, &dataStr, &v.Aprovado, &v.Pago); err != nil {
 			log.Printf("erro ao ler vale: %v", err)
@@ -87,7 +87,7 @@ func GetValesByFuncionarioID(funcionarioID int64) ([]Entity.Vale, error) {
 }
 
 // UpdateVale atualiza um vale existente
-func UpdateVale(v *Entity.Vale) error {
+func UpdateVale(v *entity.Vale) error {
 	query := `UPDATE vale SET valor = ?, data = ?, aprovado = ?, pago = ? WHERE valeID = ?`
 	_, err := DB.Exec(query, v.Valor, v.Data, v.Aprovado, v.Pago, v.ID)
 	if err != nil {
