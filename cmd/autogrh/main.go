@@ -22,7 +22,8 @@ func main() {
 	auth := Bootstrap.BuildAuth(app)
 	pessoaSvc := Bootstrap.BuildPessoaService(app, auth)
 	funcSvc := Bootstrap.BuildFuncionarioService(app, auth)
-	routes := router.New(auth, pessoaSvc, funcSvc)
+	documentoSvc := Bootstrap.BuildDocumento(app, auth)
+	routes := router.New(auth, pessoaSvc, funcSvc, documentoSvc)
 
 	cors := middleware.NewCORS(middleware.CORSConfig{
 

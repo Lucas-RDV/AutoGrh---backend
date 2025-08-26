@@ -185,3 +185,18 @@ func BuildFuncionarioService(app AppConfig, auth *service.AuthService) *service.
 
 	return service.NewFuncionarioService(auth, logRepo, funcRepo)
 }
+
+func BuildDocumento(app AppConfig, auth *service.AuthService) *service.DocumentoService {
+	createLog := func(ctx context.Context, l *entity.Log) (int64, error) { return 0, repository.CreateLog(l) }
+	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
+
+	// Adapter do DocumentoRepository
+	docRepo := Adapter.NewDocumentoRepositoryAdapter(
+		repository.CreateDocumento,
+		repository.GetDocumentosByFuncionarioID,
+		repository.ListDocumentos,
+		repository.DeleteDocumento,
+	)
+
+	return service.NewDocumentoService(auth, logRepo, docRepo)
+}
