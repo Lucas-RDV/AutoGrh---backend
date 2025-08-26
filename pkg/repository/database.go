@@ -78,22 +78,28 @@ func createTables() {
 			tipo VARCHAR(20)
 		);`,
 
-		`CREATE TABLE IF NOT EXISTS funcionario (
-			funcionarioID BIGINT AUTO_INCREMENT PRIMARY KEY,
+		`CREATE TABLE IF NOT EXISTS pessoa (
+			pessoaID BIGINT AUTO_INCREMENT PRIMARY KEY,
 			nome VARCHAR(100),
-			rg VARCHAR(20),
-			cpf VARCHAR(20),
-			pis VARCHAR(20),
-			ctpf VARCHAR(20),
+			cpf VARCHAR(20) UNIQUE,
+			rg VARCHAR(20) UNIQUE,
 			endereco TEXT,
 			contato VARCHAR(100),
-			contatoEmergencia VARCHAR(100),
+			contatoEmergencia VARCHAR(100)
+		);`,
+		`CREATE TABLE IF NOT EXISTS funcionario (
+			funcionarioID BIGINT AUTO_INCREMENT PRIMARY KEY,
+			pessoaID BIGINT UNIQUE,
+			pis VARCHAR(20),
+			ctpf VARCHAR(20),
 			nascimento DATE,
 			admissao DATE,
 			demissao DATE NULL,
 			cargo VARCHAR(50),
 			salarioInicial FLOAT,
-			feriasDisponiveis INT
+			feriasDisponiveis INT,
+			ativo BOOLEAN NOT NULL DEFAULT TRUE,
+			FOREIGN KEY (pessoaID) REFERENCES pessoa(pessoaID)
 		);`,
 
 		`CREATE TABLE IF NOT EXISTS tipo_pagamento (

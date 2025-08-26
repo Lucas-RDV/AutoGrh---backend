@@ -12,14 +12,19 @@ import (
 
 // CreateFuncionario cria um novo funcionário no banco
 func CreateFuncionario(f *entity.Funcionario) error {
+	if f.PessoaID == 0 {
+		return fmt.Errorf("pessoa associada ao funcionário é inválida ou inexistente")
+	}
+
 	query := `INSERT INTO funcionario (
-		nome, rg, cpf, pis, ctpf, endereco, contato, contatoEmergencia,
-		nascimento, admissao, demissao, cargo, salarioInicial, feriasDisponiveis)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		pessoaID, pis, ctpf, nascimento, admissao, demissao,
+		cargo, salarioInicial, feriasDisponiveis, ativo)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	result, err := DB.Exec(query,
-		f.Nome, f.RG, f.CPF, f.PIS, f.CTPF, f.Endereco, f.Contato, f.ContatoEmergencia,
-		f.Nascimento, f.Admissao, ptrToNullTime.PtrToNullTime(f.Demissao), f.Cargo, f.SalarioInicial, f.FeriasDisponiveis,
+		f.PessoaID, f.PIS, f.CTPF, f.Nascimento, f.Admissao,
+		ptrToNullTime.PtrToNullTime(f.Demissao),
+		f.Cargo, f.SalarioInicial, f.FeriasDisponiveis, true,
 	)
 	if err != nil {
 		return fmt.Errorf("erro ao inserir funcionário: %w", err)
@@ -35,9 +40,8 @@ func CreateFuncionario(f *entity.Funcionario) error {
 
 // GetFuncionarioByID busca um funcionário pelo ID com todos os relacionamentos
 func GetFuncionarioByID(id int64) (*entity.Funcionario, error) {
-	query := `SELECT funcionarioID, nome, rg, cpf, pis, ctpf, endereco, contato,
-		contatoEmergencia, nascimento, admissao, demissao, cargo, salarioInicial, feriasDisponiveis
-		FROM funcionario WHERE funcionarioID = ?`
+	query := `SELECT funcionarioID, pessoaID, pis, ctpf, nascimento, admissao, demissao,
+		cargo, salarioInicial, feriasDisponiveis FROM funcionario WHERE funcionarioID = ?`
 
 	row := DB.QueryRow(query, id)
 
@@ -46,8 +50,8 @@ func GetFuncionarioByID(id int64) (*entity.Funcionario, error) {
 	var demissao sql.NullTime
 
 	err := row.Scan(
-		&f.ID, &f.Nome, &f.RG, &f.CPF, &f.PIS, &f.CTPF, &f.Endereco, &f.Contato,
-		&f.ContatoEmergencia, &nascimentoStr, &admissaoStr, &demissao,
+		&f.ID, &f.PessoaID, &f.PIS, &f.CTPF,
+		&nascimentoStr, &admissaoStr, &demissao,
 		&f.Cargo, &f.SalarioInicial, &f.FeriasDisponiveis,
 	)
 	if err != nil {
@@ -114,15 +118,14 @@ func carregarRelacionamentos(f *entity.Funcionario) error {
 // UpdateFuncionario atualiza os dados de um funcionário
 func UpdateFuncionario(f *entity.Funcionario) error {
 	query := `UPDATE funcionario SET
-		nome = ?, rg = ?, cpf = ?, pis = ?, ctpf = ?, endereco = ?, contato = ?,
-		contatoEmergencia = ?, nascimento = ?, admissao = ?, demissao = ?,
+		pis = ?, ctpf = ?, nascimento = ?, admissao = ?, demissao = ?,
 		cargo = ?, salarioInicial = ?, feriasDisponiveis = ?
 		WHERE funcionarioID = ?`
 
 	_, err := DB.Exec(query,
-		f.Nome, f.RG, f.CPF, f.PIS, f.CTPF, f.Endereco, f.Contato, f.ContatoEmergencia,
-		f.Nascimento, f.Admissao, ptrToNullTime.PtrToNullTime(f.Demissao), f.Cargo, f.SalarioInicial, f.FeriasDisponiveis,
-		f.ID,
+		f.PIS, f.CTPF, f.Nascimento, f.Admissao,
+		ptrToNullTime.PtrToNullTime(f.Demissao),
+		f.Cargo, f.SalarioInicial, f.FeriasDisponiveis, f.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("erro ao atualizar funcionário: %w", err)
@@ -130,9 +133,9 @@ func UpdateFuncionario(f *entity.Funcionario) error {
 	return nil
 }
 
-// DeleteFuncionario remove um funcionário do banco
+// DeleteFuncionario faz soft delete de um funcionário
 func DeleteFuncionario(id int64) error {
-	query := `DELETE FROM funcionario WHERE funcionarioID = ?`
+	query := `UPDATE funcionario SET ativo = FALSE WHERE funcionarioID = ?`
 	_, err := DB.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("erro ao deletar funcionário: %w", err)
@@ -140,24 +143,59 @@ func DeleteFuncionario(id int64) error {
 	return nil
 }
 
-// ListFuncionarios retorna uma lista leve de funcionários
-func ListFuncionarios() ([]*entity.Funcionario, error) {
-	query := `SELECT funcionarioID, nome FROM funcionario`
+// listFuncionariosByAtivo é uma função auxiliar para consultas com base no status ativo
+func listFuncionariosByAtivo(ativo bool) ([]*entity.Funcionario, error) {
+	query := `SELECT funcionarioID, pessoaID FROM funcionario WHERE ativo = ?`
 
-	rows, err := DB.Query(query)
+	rows, err := DB.Query(query, ativo)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao listar funcionários: %w", err)
 	}
 	defer func() {
 		if cerr := rows.Close(); cerr != nil {
-			log.Printf("erro ao fechar rows em ListFuncionarios: %v", cerr)
+			log.Printf("erro ao fechar rows: %v", cerr)
 		}
 	}()
+
 	var lista []*entity.Funcionario
 	for rows.Next() {
 		var f entity.Funcionario
-		err := rows.Scan(&f.ID, &f.Nome)
-		if err != nil {
+		if err := rows.Scan(&f.ID, &f.PessoaID); err != nil {
+			return nil, fmt.Errorf("erro ao ler funcionário: %w", err)
+		}
+		lista = append(lista, &f)
+	}
+	return lista, nil
+}
+
+// ListFuncionariosAtivos retorna lista de funcionários ativos
+func ListFuncionariosAtivos() ([]*entity.Funcionario, error) {
+	return listFuncionariosByAtivo(true)
+}
+
+// ListFuncionariosInativos retorna lista de funcionários desligados
+func ListFuncionariosInativos() ([]*entity.Funcionario, error) {
+	return listFuncionariosByAtivo(false)
+}
+
+// ListTodosFuncionarios retorna todos os funcionários sem filtro
+func ListTodosFuncionarios() ([]*entity.Funcionario, error) {
+	query := `SELECT funcionarioID, pessoaID FROM funcionario`
+
+	rows, err := DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao listar todos os funcionários: %w", err)
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows: %v", cerr)
+		}
+	}()
+
+	var lista []*entity.Funcionario
+	for rows.Next() {
+		var f entity.Funcionario
+		if err := rows.Scan(&f.ID, &f.PessoaID); err != nil {
 			return nil, fmt.Errorf("erro ao ler funcionário: %w", err)
 		}
 		lista = append(lista, &f)

@@ -23,11 +23,11 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiO
 ### [ADMIN] Criar novo usuário - sucesso
 POST http://localhost:8080/admin/usuarios
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTU4MTcyMDAsImlhdCI6MTc1NTc5NzQ5OX0.DxWJmDNyGkD3ewB61Rb0QkTrB5IsVUgdwMOrGl-LbaA
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTYyMjQwMDAsImlhdCI6MTc1NjIxNTU5NH0.Krx80D38APbgPFgm6X7KN6O4OVYY1JP1-T0i3lFhLyo
 
 {
-  "username": "teste4",
-  "password": "teste",
+  "username": "teste",
+  "password": "teste123",
   "isAdmin": false
 }
 

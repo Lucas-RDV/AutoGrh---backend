@@ -100,8 +100,27 @@ func Load() AppConfig {
 	}
 
 	perms := service.PermissionMap{
-		"admin":   {"*": {}},
-		"usuario": {"self:read": {}, "self:update": {}, "ferias:request": {}},
+		"admin": {
+			"*": {}, // acesso total
+		},
+		"usuario": {
+			// usuario
+			"self:read":      {},
+			"self:update":    {},
+			"ferias:request": {},
+
+			// pessoa
+			"pessoa:create": {}, // pode cadastrar pessoa
+			"pessoa:read":   {}, // pode visualizar pessoa
+			"pessoa:list":   {}, // pode listar pessoas
+			// pessoa:update/delete só admin efetiva
+
+			// funcionario
+			"funcionario:create": {}, // pode cadastrar funcionário
+			"funcionario:read":   {}, // pode visualizar funcionário
+			"funcionario:list":   {}, // pode listar funcionários
+			// funcionario:update/delete só admin efetiva
+		},
 	}
 
 	return AppConfig{
@@ -125,4 +144,44 @@ func BuildAuth(app AppConfig) *service.AuthService {
 	createLog := func(ctx context.Context, l *entity.Log) (int64, error) { return 0, repository.CreateLog(l) }
 	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
 	return service.NewAuthService(userRepo, logRepo, tm, app.Auth, app.Perms)
+}
+
+// BuildPessoaService inicializa o PessoaService com suas dependências
+func BuildPessoaService(app AppConfig, auth *service.AuthService) *service.PessoaService {
+	createLog := func(ctx context.Context, l *entity.Log) (int64, error) { return 0, repository.CreateLog(l) }
+	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
+
+	// repositório de Pessoa (direto do pacote repository)
+	pessoaRepo := Adapter.NewPessoaRepositoryAdapter(
+		repository.CreatePessoa,
+		repository.GetPessoaByID,
+		repository.GetPessoaByCPF,
+		repository.UpdatePessoa,
+		repository.DeletePessoa,
+		repository.ExistsPessoaByCPF,
+		repository.ExistsPessoaByRG,
+		repository.SearchPessoaByNome,
+		repository.ListPessoas,
+	)
+
+	return service.NewPessoaService(auth, logRepo, pessoaRepo)
+}
+
+// BuildFuncionarioService inicializa o FuncionarioService com suas dependências
+func BuildFuncionarioService(app AppConfig, auth *service.AuthService) *service.FuncionarioService {
+	createLog := func(ctx context.Context, l *entity.Log) (int64, error) { return 0, repository.CreateLog(l) }
+	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
+
+	// repositório de Funcionario (direto do pacote repository)
+	funcRepo := Adapter.NewFuncionarioRepositoryAdapter(
+		repository.CreateFuncionario,
+		repository.GetFuncionarioByID,
+		repository.UpdateFuncionario,
+		repository.DeleteFuncionario,
+		repository.ListFuncionariosAtivos,
+		repository.ListFuncionariosInativos,
+		repository.ListTodosFuncionarios,
+	)
+
+	return service.NewFuncionarioService(auth, logRepo, funcRepo)
 }

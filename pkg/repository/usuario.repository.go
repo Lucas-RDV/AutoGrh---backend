@@ -28,11 +28,11 @@ func CreateUsuario(u *entity.Usuario) error {
 
 // GetUsuarioByID busca um usuário pelo ID
 func GetUsuarioByID(id int64) (*entity.Usuario, error) {
-	query := `SELECT usuarioID, username, password, isAdmin FROM usuario WHERE usuarioID = ? AND ativo = TRUE`
+	query := `SELECT usuarioID, username, password, isAdmin, ativo FROM usuario WHERE usuarioID = ? AND ativo = TRUE`
 	row := DB.QueryRow(query, id)
 
 	var u entity.Usuario
-	if err := row.Scan(&u.ID, &u.Username, &u.Password, &u.IsAdmin); err != nil {
+	if err := row.Scan(&u.ID, &u.Username, &u.Password, &u.IsAdmin, u.Ativo); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -63,7 +63,7 @@ func DeleteUsuario(id int64) error {
 
 // GetAllUsuarios lista todos os usuários
 func GetAllUsuarios() ([]*entity.Usuario, error) {
-	query := `SELECT usuarioID, username, password, isAdmin FROM usuario WHERE ativo = TRUE`
+	query := `SELECT usuarioID, username, password, isAdmin, ativo FROM usuario WHERE ativo = TRUE`
 
 	rows, err := DB.Query(query)
 	if err != nil {
@@ -78,7 +78,7 @@ func GetAllUsuarios() ([]*entity.Usuario, error) {
 	var usuarios []*entity.Usuario
 	for rows.Next() {
 		var u entity.Usuario
-		if err := rows.Scan(&u.ID, &u.Username, &u.Password, &u.IsAdmin); err != nil {
+		if err := rows.Scan(&u.ID, &u.Username, &u.Password, &u.IsAdmin, &u.Ativo); err != nil {
 			log.Printf("erro ao ler linha de usuário: %v", err)
 			continue
 		}
@@ -99,11 +99,11 @@ func GetUsuarioByUsername(ctx context.Context, username string) (*entity.Usuario
 		return nil, nil // nada a buscar
 	}
 
-	const q = `SELECT usuarioID, username, password, isAdmin FROM usuario WHERE username = ? = TRUE LIMIT 1`
+	const q = `SELECT usuarioID, username, password, isAdmin, ativo FROM usuario WHERE username = ? = TRUE LIMIT 1`
 	row := DB.QueryRowContext(ctx, q, u)
 
 	var out entity.Usuario
-	if err := row.Scan(&out.ID, &out.Username, &out.Password, &out.IsAdmin); err != nil {
+	if err := row.Scan(&out.ID, &out.Username, &out.Password, &out.IsAdmin, &out.Ativo); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}

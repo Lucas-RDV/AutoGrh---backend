@@ -1,0 +1,92 @@
+### LOGIN - ADMIN
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "login": "admin",
+  "senha": "adm123"
+}
+
+### LOGIN - USUÁRIO COMUM
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "login": "teste",
+  "senha": "teste123"
+}
+
+### [COMMON USER] Criar novo funcionário - sucesso
+POST http://localhost:8080/funcionarios
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTYyMjQwMDAsImlhdCI6MTc1NjIxNTU5NH0.Krx80D38APbgPFgm6X7KN6O4OVYY1JP1-T0i3lFhLyo
+
+{
+  "pessoaID": 2,
+  "pis": "123456",
+  "ctpf": "654321",
+  "nascimento": "1990-05-10",
+  "admissao": "2025-01-01",
+  "cargo": "Desenvolvedor",
+  "salarioInicial": 3500,
+  "feriasDisponiveis": 30
+}
+
+### [COMMON USER] Criar funcionário com pessoa já vinculada - deve falhar
+POST http://localhost:8080/funcionarios
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTYyMjQwMDAsImlhdCI6MTc1NjIxNTU5NH0.Krx80D38APbgPFgm6X7KN6O4OVYY1JP1-T0i3lFhLyo
+
+{
+  "pessoaID": 2,
+  "pis": "000111",
+  "ctpf": "999888",
+  "nascimento": "1995-12-01",
+  "admissao": "2025-02-01",
+  "cargo": "Analista",
+  "salarioInicial": 2500,
+  "feriasDisponiveis": 20
+}
+
+### [COMMON USER] Listar funcionários ativos
+GET http://localhost:8080/funcionarios/ativos
+Authorization: Bearer {{USUARIO_TOKEN}}
+
+### [COMMON USER] Listar funcionários inativos
+GET http://localhost:8080/funcionarios/inativos
+Authorization: Bearer {{USUARIO_TOKEN}}
+
+### [COMMON USER] Listar todos os funcionários
+GET http://localhost:8080/funcionarios/todos
+Authorization: Bearer {{USUARIO_TOKEN}}
+
+### [COMMON USER] Buscar funcionário por ID
+GET http://localhost:8080/funcionarios/1
+Authorization: Bearer {{USUARIO_TOKEN}}
+
+### [COMMON USER] Atualizar funcionário (gera pedido de aprovação)
+PUT http://localhost:8080/funcionarios/1
+Content-Type: application/json
+Authorization: Bearer {{USUARIO_TOKEN}}
+
+{
+  "pessoaID": 1,
+  "pis": "123456",
+  "ctpf": "654321",
+  "nascimento": "1990-05-10",
+  "admissao": "2025-01-01",
+  "cargo": "Desenvolvedor Pleno",
+  "salarioInicial": 4200,
+  "feriasDisponiveis": 25
+}
+
+### [COMMON USER] Excluir funcionário (gera pedido de aprovação)
+DELETE http://localhost:8080/funcionarios/1
+Authorization: Bearer {{USUARIO_TOKEN}}
+
+### [TOKEN INVÁLIDO]
+GET http://localhost:8080/funcionarios/ativos
+Authorization: Bearer XYZ123INVALIDTOKEN
+
+### [TOKEN AUSENTE]
+GET http://localhost:8080/funcionarios/ativos
