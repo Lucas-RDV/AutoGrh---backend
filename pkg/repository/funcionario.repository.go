@@ -5,6 +5,7 @@ import (
 	"AutoGRH/pkg/utils/dateStringToTime"
 	"AutoGRH/pkg/utils/nullTimeToPtr"
 	"AutoGRH/pkg/utils/ptrToNullTime"
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -92,8 +93,10 @@ func carregarRelacionamentos(f *entity.Funcionario) error {
 	} else {
 		return fmt.Errorf("erro ao carregar salários: %w", err)
 	}
-	if documentos, err := GetDocumentosByFuncionarioID(f.ID); err == nil {
-		f.Documentos = documentos
+	if documentos, err := GetDocumentosByFuncionarioID(context.Background(), f.ID); err == nil {
+		for _, d := range documentos {
+			f.Documentos = append(f.Documentos, *d)
+		}
 	} else {
 		return fmt.Errorf("erro ao carregar documentos: %w", err)
 	}

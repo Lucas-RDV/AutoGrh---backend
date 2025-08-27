@@ -4,14 +4,14 @@ package entity
 // Pode ser um comprovante, contrato, atestado, etc.
 type Documento struct {
 	ID            int64  `json:"id"`
-	Doc           []byte `json:"doc"`
-	FuncionarioID int64  `json:"funcionario_id"`
+	FuncionarioID int64  `json:"funcionarioID"`
+	Caminho       string `json:"caminho"`
 }
 
 // NewDocumento cria uma nova instância de Documento vinculado a um funcionário
-func NewDocumento(doc []byte, funcionarioID int64) *Documento {
+func NewDocumento(caminho string, funcionarioID int64) *Documento {
 	return &Documento{
-		Doc:           doc,
+		Caminho:       caminho,
 		FuncionarioID: funcionarioID,
 	}
 }

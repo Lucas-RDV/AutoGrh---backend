@@ -23,7 +23,7 @@ func New(auth *service.AuthService, pessoaSvc *service.PessoaService, funcionari
 	// Rota pública
 	r.Post("/auth/login", authCtl.Login)
 
-	// Rota autenticada básica
+	// Rota autenticada básica (exemplo)
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.RequireAuth(auth))
 		r.Get("/me", func(w http.ResponseWriter, r *http.Request) {
@@ -78,6 +78,7 @@ func New(auth *service.AuthService, pessoaSvc *service.PessoaService, funcionari
 	// Rotas diretas de Documentos
 	r.Route("/documentos", func(r chi.Router) {
 		r.With(middleware.RequirePerm(auth, "documento:list")).Get("/", documentoCtl.ListDocumentos)
+		r.With(middleware.RequirePerm(auth, "documento:list")).Get("/{id}/download", documentoCtl.DownloadDocumento)
 		r.With(middleware.RequirePerm(auth, "documento:delete")).Delete("/{id}", documentoCtl.DeleteDocumento)
 	})
 

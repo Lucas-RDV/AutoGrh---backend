@@ -33,7 +33,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiO
 ### [COMMON USER] Criar pessoa com CPF duplicado - deve falhar
 POST http://localhost:8080/pessoas
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTYyMjQwMDAsImlhdCI6MTc1NjIxNTU5NH0.Krx80D38APbgPFgm6X7KN6O4OVYY1JP1-T0i3lFhLyo
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTYzMTA0MDAsImlhdCI6MTc1NjMwMDk0OX0.La8bEfanveMPYX5FMsV8sgVdy47hIlIStWXw_RWNd3M
 
 {
   "nome": "Maria Souza",
