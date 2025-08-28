@@ -3,8 +3,8 @@ package repository
 import (
 	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/utils/dateStringToTime"
+	"database/sql"
 	"fmt"
-	"log"
 )
 
 // CreateFalta cria um registro de falta
@@ -25,42 +25,54 @@ func CreateFalta(f *entity.Falta) error {
 }
 
 // GetFaltasByFuncionarioID busca todas as faltas de um funcionário
-func GetFaltasByFuncionarioID(funcionarioID int64) ([]entity.Falta, error) {
+func GetFaltasByFuncionarioID(funcionarioID int64) ([]*entity.Falta, error) {
 	query := `SELECT faltaID, funcionarioID, quantidade, data FROM falta WHERE funcionarioID = ?`
 
 	rows, err := DB.Query(query, funcionarioID)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao buscar faltas: %w", err)
+		return nil, fmt.Errorf("erro ao listar faltas por funcionário: %w", err)
 	}
-	defer func() {
-		if cerr := rows.Close(); cerr != nil {
-			log.Printf("erro ao fechar rows em GetFaltasByFuncionarioID: %v", cerr)
-		}
-	}()
+	defer rows.Close()
 
-	var faltas []entity.Falta
+	var lista []*entity.Falta
 	for rows.Next() {
 		var f entity.Falta
-		var mesStr string
-
-		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Quantidade, &mesStr); err != nil {
-			log.Printf("erro ao ler falta: %v", err)
-			continue
+		var dataStr string
+		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Quantidade, &dataStr); err != nil {
+			return nil, fmt.Errorf("erro ao ler falta: %w", err)
 		}
 
-		parsed, err := dateStringToTime.DateStringToTime(mesStr)
+		f.Mes, err = dateStringToTime.DateStringToTime(dataStr)
 		if err != nil {
-			log.Printf("erro ao converter data da falta: %v", err)
-			continue
+			return nil, fmt.Errorf("erro ao converter data: %w", err)
 		}
-		f.Mes = parsed
 
-		faltas = append(faltas, f)
+		lista = append(lista, &f)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("erro ao iterar faltas: %w", err)
+	return lista, nil
+}
+
+// GetFaltaByID retorna uma falta pelo ID
+func GetFaltaByID(id int64) (*entity.Falta, error) {
+	query := `SELECT faltaID, funcionarioID, quantidade, data FROM falta WHERE faltaID = ?`
+	row := DB.QueryRow(query, id)
+
+	var f entity.Falta
+	var dataStr string
+	if err := row.Scan(&f.ID, &f.FuncionarioID, &f.Quantidade, &dataStr); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("erro ao buscar falta: %w", err)
 	}
-	return faltas, nil
+
+	var err error
+	f.Mes, err = dateStringToTime.DateStringToTime(dataStr)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao converter data: %w", err)
+	}
+
+	return &f, nil
 }
 
 // UpdateFalta atualiza um registro de falta
@@ -83,41 +95,30 @@ func DeleteFalta(id int64) error {
 	return nil
 }
 
-// ListFaltas lista todas as faltas
-func ListFaltas() ([]entity.Falta, error) {
+// ListAllFaltas retorna todas as faltas cadastradas
+func ListAllFaltas() ([]*entity.Falta, error) {
 	query := `SELECT faltaID, funcionarioID, quantidade, data FROM falta`
 
 	rows, err := DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao listar faltas: %w", err)
 	}
-	defer func() {
-		if cerr := rows.Close(); cerr != nil {
-			log.Printf("erro ao fechar rows em ListFaltas: %v", cerr)
-		}
-	}()
+	defer rows.Close()
 
-	var faltas []entity.Falta
+	var lista []*entity.Falta
 	for rows.Next() {
 		var f entity.Falta
-		var mesStr string
-
-		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Quantidade, &mesStr); err != nil {
-			log.Printf("erro ao ler falta: %v", err)
-			continue
+		var dataStr string
+		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Quantidade, &dataStr); err != nil {
+			return nil, fmt.Errorf("erro ao ler falta: %w", err)
 		}
 
-		parsed, err := dateStringToTime.DateStringToTime(mesStr)
+		f.Mes, err = dateStringToTime.DateStringToTime(dataStr)
 		if err != nil {
-			log.Printf("erro ao converter data da falta: %v", err)
-			continue
+			return nil, fmt.Errorf("erro ao converter data: %w", err)
 		}
-		f.Mes = parsed
 
-		faltas = append(faltas, f)
+		lista = append(lista, &f)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("erro ao iterar faltas: %w", err)
-	}
-	return faltas, nil
+	return lista, nil
 }

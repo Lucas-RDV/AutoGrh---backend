@@ -26,7 +26,7 @@ func CreateSalario(s *entity.Salario) error {
 }
 
 // GetSalariosByFuncionarioID retorna todos os salários de um funcionário (ordenados por início)
-func GetSalariosByFuncionarioID(funcionarioID int64) ([]entity.Salario, error) {
+func GetSalariosByFuncionarioID(funcionarioID int64) ([]*entity.Salario, error) {
 	query := `SELECT salarioID, funcionarioID, inicio, fim, valor
 	          FROM salario WHERE funcionarioID = ? ORDER BY inicio ASC`
 
@@ -40,7 +40,7 @@ func GetSalariosByFuncionarioID(funcionarioID int64) ([]entity.Salario, error) {
 		}
 	}()
 
-	var salarios []entity.Salario
+	var salarios []*entity.Salario
 	for rows.Next() {
 		var s entity.Salario
 		var inicioStr string
@@ -65,7 +65,7 @@ func GetSalariosByFuncionarioID(funcionarioID int64) ([]entity.Salario, error) {
 			}
 		}
 
-		salarios = append(salarios, s)
+		salarios = append(salarios, &s)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("erro ao iterar salários: %w", err)

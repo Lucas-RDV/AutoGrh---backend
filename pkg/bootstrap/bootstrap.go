@@ -147,7 +147,7 @@ func BuildAuth(app AppConfig) *service.AuthService {
 }
 
 // BuildPessoaService inicializa o PessoaService com suas dependências
-func BuildPessoaService(app AppConfig, auth *service.AuthService) *service.PessoaService {
+func BuildPessoaService(auth *service.AuthService) *service.PessoaService {
 	createLog := func(ctx context.Context, l *entity.Log) (int64, error) { return 0, repository.CreateLog(l) }
 	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
 
@@ -168,7 +168,7 @@ func BuildPessoaService(app AppConfig, auth *service.AuthService) *service.Pesso
 }
 
 // BuildFuncionarioService inicializa o FuncionarioService com suas dependências
-func BuildFuncionarioService(app AppConfig, auth *service.AuthService) *service.FuncionarioService {
+func BuildFuncionarioService(auth *service.AuthService) *service.FuncionarioService {
 	createLog := func(ctx context.Context, l *entity.Log) (int64, error) { return 0, repository.CreateLog(l) }
 	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
 
@@ -187,7 +187,7 @@ func BuildFuncionarioService(app AppConfig, auth *service.AuthService) *service.
 }
 
 // BuildDocumentoService constrói o DocumentoService com repositório e log
-func BuildDocumentoService(app AppConfig, auth *service.AuthService) *service.DocumentoService {
+func BuildDocumentoService(auth *service.AuthService) *service.DocumentoService {
 	createLog := func(ctx context.Context, l *entity.Log) (int64, error) {
 		return 0, repository.CreateLog(l)
 	}
@@ -202,4 +202,22 @@ func BuildDocumentoService(app AppConfig, auth *service.AuthService) *service.Do
 	)
 
 	return service.NewDocumentoService(auth, logRepo, docRepo)
+}
+
+func BuildFaltaService(auth *service.AuthService) *service.FaltaService {
+	createLog := func(ctx context.Context, l *entity.Log) (int64, error) {
+		return 0, repository.CreateLog(l)
+	}
+	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
+
+	faltaRepo := Adapter.NewFaltaRepositoryAdapter(
+		repository.CreateFalta,
+		repository.UpdateFalta,
+		repository.DeleteFalta,
+		repository.GetFaltaByID,
+		repository.GetFaltasByFuncionarioID,
+		repository.ListAllFaltas,
+	)
+
+	return service.NewFaltaService(auth, logRepo, faltaRepo)
 }

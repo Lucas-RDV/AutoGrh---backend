@@ -73,6 +73,15 @@ func createTables() {
 			ativo BOOLEAN NOT NULL DEFAULT TRUE
 		);`,
 
+		`CREATE TABLE IF NOT EXISTS salario_real (
+		  salarioRealID BIGINT AUTO_INCREMENT PRIMARY KEY,
+		  funcionarioID BIGINT,
+		  inicio DATE,
+		  fim DATE DEFAULT NULL,
+		  valor FLOAT,
+		  FOREIGN KEY (funcionarioID) REFERENCES funcionario(funcionarioID)
+		);`,
+
 		`CREATE TABLE IF NOT EXISTS evento (
 			eventoID BIGINT AUTO_INCREMENT PRIMARY KEY,
 			tipo VARCHAR(20)

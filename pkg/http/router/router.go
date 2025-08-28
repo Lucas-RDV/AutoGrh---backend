@@ -10,7 +10,13 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func New(auth *service.AuthService, pessoaSvc *service.PessoaService, funcionarioSvc *service.FuncionarioService, documentoSvc *service.DocumentoService) http.Handler {
+func New(
+	auth *service.AuthService,
+	pessoaSvc *service.PessoaService,
+	funcionarioSvc *service.FuncionarioService,
+	documentoSvc *service.DocumentoService,
+	faltaSvc *service.FaltaService, // novo
+) http.Handler {
 	r := chi.NewRouter()
 
 	authCtl := controller.NewAuthController(auth)
@@ -19,11 +25,12 @@ func New(auth *service.AuthService, pessoaSvc *service.PessoaService, funcionari
 	pessoaCtl := controller.NewPessoaController(pessoaSvc)
 	funcionarioCtl := controller.NewFuncionarioController(funcionarioSvc)
 	documentoCtl := controller.NewDocumentoController(documentoSvc)
+	faltaCtl := controller.NewFaltaController(faltaSvc) // novo
 
 	// Rota pública
 	r.Post("/auth/login", authCtl.Login)
 
-	// Rota autenticada básica (exemplo)
+	// Rota autenticada básica
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.RequireAuth(auth))
 		r.Get("/me", func(w http.ResponseWriter, r *http.Request) {
@@ -73,6 +80,10 @@ func New(auth *service.AuthService, pessoaSvc *service.PessoaService, funcionari
 		// Documentos dentro de funcionário
 		r.With(middleware.RequirePerm(auth, "documento:create")).Post("/{id}/documentos", documentoCtl.CreateDocumento)
 		r.With(middleware.RequirePerm(auth, "documento:list")).Get("/{id}/documentos", documentoCtl.GetDocumentosByFuncionarioID)
+
+		// Faltas dentro de funcionário
+		r.With(middleware.RequirePerm(auth, "falta:list")).Get("/{id}/faltas", faltaCtl.GetFaltasByFuncionarioID)
+		r.With(middleware.RequirePerm(auth, "falta:create")).Post("/{id}/faltas", faltaCtl.CreateFalta)
 	})
 
 	// Rotas diretas de Documentos
@@ -80,6 +91,14 @@ func New(auth *service.AuthService, pessoaSvc *service.PessoaService, funcionari
 		r.With(middleware.RequirePerm(auth, "documento:list")).Get("/", documentoCtl.ListDocumentos)
 		r.With(middleware.RequirePerm(auth, "documento:list")).Get("/{id}/download", documentoCtl.DownloadDocumento)
 		r.With(middleware.RequirePerm(auth, "documento:delete")).Delete("/{id}", documentoCtl.DeleteDocumento)
+	})
+
+	// Rotas diretas de Faltas
+	r.Route("/faltas", func(r chi.Router) {
+		r.With(middleware.RequirePerm(auth, "falta:list")).Get("/", faltaCtl.ListAllFaltas)
+		r.With(middleware.RequirePerm(auth, "falta:read")).Get("/{id}", faltaCtl.GetFaltaByID)
+		r.With(middleware.RequirePerm(auth, "falta:update")).Put("/{id}", faltaCtl.UpdateFalta)
+		r.With(middleware.RequirePerm(auth, "falta:delete")).Delete("/{id}", faltaCtl.DeleteFalta)
 	})
 
 	return r

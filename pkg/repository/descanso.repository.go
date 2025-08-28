@@ -159,3 +159,86 @@ func DeleteDescanso(id int64) error {
 	}
 	return nil
 }
+
+// GetDescansosAprovados retorna todos os descansos aprovados de um período de férias
+func GetDescansosAprovados(feriasID int64) ([]*entity.Descanso, error) {
+	query := `SELECT descansoID, feriasID, inicio, fim, valor, pago, aprovado
+			  FROM descanso WHERE feriasID = ? AND aprovado = TRUE`
+
+	rows, err := DB.Query(query, feriasID)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao buscar descansos aprovados: %w", err)
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em GetDescansosAprovados: %v", cerr)
+		}
+	}()
+
+	var lista []*entity.Descanso
+	for rows.Next() {
+		var d entity.Descanso
+		err := rows.Scan(&d.ID, &d.FeriasID, &d.Inicio, &d.Fim, &d.Valor, &d.Pago, &d.Aprovado)
+		if err != nil {
+			return nil, fmt.Errorf("erro ao ler descanso aprovado: %w", err)
+		}
+		lista = append(lista, &d)
+	}
+	return lista, nil
+}
+
+// GetDescansosPendentes retorna todos os descansos ainda não aprovados de um período de férias
+func GetDescansosPendentes(feriasID int64) ([]*entity.Descanso, error) {
+	query := `SELECT descansoID, feriasID, inicio, fim, valor, pago, aprovado
+			  FROM descanso WHERE feriasID = ? AND aprovado = FALSE`
+
+	rows, err := DB.Query(query, feriasID)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao buscar descansos pendentes: %w", err)
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em GetDescansosPendentes: %v", cerr)
+		}
+	}()
+
+	var lista []*entity.Descanso
+	for rows.Next() {
+		var d entity.Descanso
+		err := rows.Scan(&d.ID, &d.FeriasID, &d.Inicio, &d.Fim, &d.Valor, &d.Pago, &d.Aprovado)
+		if err != nil {
+			return nil, fmt.Errorf("erro ao ler descanso pendente: %w", err)
+		}
+		lista = append(lista, &d)
+	}
+	return lista, nil
+}
+
+// GetDescansosByFuncionarioID retorna todos os descansos de um funcionário (indiretamente via férias)
+func GetDescansosByFuncionarioID(funcionarioID int64) ([]*entity.Descanso, error) {
+	query := `SELECT d.descansoID, d.feriasID, d.inicio, d.fim, d.valor, d.pago, d.aprovado
+			  FROM descanso d
+			  INNER JOIN ferias f ON d.feriasID = f.feriasID
+			  WHERE f.funcionarioID = ?`
+
+	rows, err := DB.Query(query, funcionarioID)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao buscar descansos por funcionário: %w", err)
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em GetDescansosByFuncionarioID: %v", cerr)
+		}
+	}()
+
+	var lista []*entity.Descanso
+	for rows.Next() {
+		var d entity.Descanso
+		err := rows.Scan(&d.ID, &d.FeriasID, &d.Inicio, &d.Fim, &d.Valor, &d.Pago, &d.Aprovado)
+		if err != nil {
+			return nil, fmt.Errorf("erro ao ler descanso por funcionário: %w", err)
+		}
+		lista = append(lista, &d)
+	}
+	return lista, nil
+}

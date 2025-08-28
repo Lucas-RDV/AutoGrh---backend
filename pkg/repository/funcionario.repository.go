@@ -80,6 +80,7 @@ func GetFuncionarioByID(id int64) (*entity.Funcionario, error) {
 	return &f, nil
 }
 
+// carregarRelacionamentos popula dados relacionados ao funcionário
 func carregarRelacionamentos(f *entity.Funcionario) error {
 	if ferias, err := GetFeriasByFuncionarioID(f.ID); err == nil {
 		for _, fr := range ferias {
@@ -88,11 +89,31 @@ func carregarRelacionamentos(f *entity.Funcionario) error {
 	} else {
 		return fmt.Errorf("erro ao carregar férias: %w", err)
 	}
+
 	if salarios, err := GetSalariosByFuncionarioID(f.ID); err == nil {
-		f.Salarios = salarios
+		f.SalariosRegistrados = salarios
 	} else {
-		return fmt.Errorf("erro ao carregar salários: %w", err)
+		return fmt.Errorf("erro ao carregar salários registrados: %w", err)
 	}
+
+	if salarioAtual, err := GetSalarioAtual(f.ID); err == nil {
+		f.SalarioRegistradoAtual = salarioAtual
+	} else {
+		return fmt.Errorf("erro ao carregar salário registrado atual: %w", err)
+	}
+
+	if salariosReais, err := GetSalariosReaisByFuncionarioID(f.ID); err == nil {
+		f.SalariosReais = salariosReais
+	} else {
+		return fmt.Errorf("erro ao carregar salários reais: %w", err)
+	}
+
+	if salarioRealAtual, err := GetSalarioRealAtual(f.ID); err == nil {
+		f.SalarioRealAtual = salarioRealAtual
+	} else {
+		return fmt.Errorf("erro ao carregar salário real atual: %w", err)
+	}
+
 	if documentos, err := GetDocumentosByFuncionarioID(context.Background(), f.ID); err == nil {
 		for _, d := range documentos {
 			f.Documentos = append(f.Documentos, *d)
@@ -100,21 +121,25 @@ func carregarRelacionamentos(f *entity.Funcionario) error {
 	} else {
 		return fmt.Errorf("erro ao carregar documentos: %w", err)
 	}
+
 	if faltas, err := GetFaltasByFuncionarioID(f.ID); err == nil {
 		f.Faltas = faltas
 	} else {
 		return fmt.Errorf("erro ao carregar faltas: %w", err)
 	}
+
 	if pagamentos, err := GetPagamentosByFuncionarioID(f.ID); err == nil {
 		f.Pagamentos = pagamentos
 	} else {
 		return fmt.Errorf("erro ao carregar pagamentos: %w", err)
 	}
+
 	if vales, err := GetValesByFuncionarioID(f.ID); err == nil {
 		f.Vales = vales
 	} else {
 		return fmt.Errorf("erro ao carregar vales: %w", err)
 	}
+
 	return nil
 }
 
@@ -204,4 +229,27 @@ func ListTodosFuncionarios() ([]*entity.Funcionario, error) {
 		lista = append(lista, &f)
 	}
 	return lista, nil
+}
+
+//
+// === NOVAS FUNÇÕES AUXILIARES PARA SALÁRIOS ===
+//
+
+// GetSalarioAtual retorna o salário registrado atual (fim IS NULL)
+func GetSalarioAtual(funcionarioID int64) (*entity.Salario, error) {
+	query := `SELECT salarioID, funcionarioID, inicio, fim, valor
+			  FROM salario WHERE funcionarioID = ? AND fim IS NULL LIMIT 1`
+
+	row := DB.QueryRow(query, funcionarioID)
+
+	var s entity.Salario
+	var fim sql.NullTime
+	if err := row.Scan(&s.ID, &s.FuncionarioID, &s.Inicio, &fim, &s.Valor); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("erro ao buscar salário atual: %w", err)
+	}
+	s.Fim = nullTimeToPtr.NullTimeToPtr(fim)
+	return &s, nil
 }

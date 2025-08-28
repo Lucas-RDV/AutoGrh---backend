@@ -178,3 +178,67 @@ func ListFerias() ([]entity.Ferias, error) {
 	}
 	return lista, nil
 }
+
+// GetFeriasAtivas retorna as férias não vencidas de um funcionário
+func GetFeriasAtivas(funcionarioID int64) ([]*entity.Ferias, error) {
+	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor
+			  FROM ferias WHERE funcionarioID = ? AND vencido = FALSE`
+
+	rows, err := DB.Query(query, funcionarioID)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao buscar férias ativas: %w", err)
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em GetFeriasAtivas: %v", cerr)
+		}
+	}()
+
+	var lista []*entity.Ferias
+	for rows.Next() {
+		var f entity.Ferias
+		err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &f.Inicio, &f.Vencimento, &f.Vencido, &f.Valor)
+		if err != nil {
+			return nil, fmt.Errorf("erro ao ler férias ativas: %w", err)
+		}
+		lista = append(lista, &f)
+	}
+	return lista, nil
+}
+
+// GetFeriasVencidas retorna as férias já vencidas de um funcionário
+func GetFeriasVencidas(funcionarioID int64) ([]*entity.Ferias, error) {
+	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor
+			  FROM ferias WHERE funcionarioID = ? AND vencido = TRUE`
+
+	rows, err := DB.Query(query, funcionarioID)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao buscar férias vencidas: %w", err)
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em GetFeriasVencidas: %v", cerr)
+		}
+	}()
+
+	var lista []*entity.Ferias
+	for rows.Next() {
+		var f entity.Ferias
+		err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &f.Inicio, &f.Vencimento, &f.Vencido, &f.Valor)
+		if err != nil {
+			return nil, fmt.Errorf("erro ao ler férias vencidas: %w", err)
+		}
+		lista = append(lista, &f)
+	}
+	return lista, nil
+}
+
+// ConsumirDiasFerias subtrai uma quantidade de dias de férias
+func ConsumirDiasFerias(feriasID int64, dias int) error {
+	query := `UPDATE ferias SET dias = dias - ? WHERE feriasID = ? AND dias >= ?`
+	_, err := DB.Exec(query, dias, feriasID, dias)
+	if err != nil {
+		return fmt.Errorf("erro ao consumir dias de férias: %w", err)
+	}
+	return nil
+}

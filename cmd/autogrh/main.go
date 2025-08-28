@@ -20,10 +20,11 @@ func main() {
 	}
 
 	auth := Bootstrap.BuildAuth(app)
-	pessoaSvc := Bootstrap.BuildPessoaService(app, auth)
-	funcSvc := Bootstrap.BuildFuncionarioService(app, auth)
-	documentoSvc := Bootstrap.BuildDocumentoService(app, auth)
-	routes := router.New(auth, pessoaSvc, funcSvc, documentoSvc)
+	pessoaSvc := Bootstrap.BuildPessoaService(auth)
+	funcSvc := Bootstrap.BuildFuncionarioService(auth)
+	documentoSvc := Bootstrap.BuildDocumentoService(auth)
+	faltaSvc := Bootstrap.BuildFaltaService(auth)
+	routes := router.New(auth, pessoaSvc, funcSvc, documentoSvc, faltaSvc)
 
 	cors := middleware.NewCORS(middleware.CORSConfig{
 
