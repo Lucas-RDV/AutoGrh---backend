@@ -169,12 +169,15 @@ func createTables() {
 
 		`CREATE TABLE IF NOT EXISTS ferias (
 			feriasID BIGINT AUTO_INCREMENT PRIMARY KEY,
-			funcionarioID BIGINT,
-			dias INT,
-			inicio DATE,
-			vencimento DATE,
-			vencido BOOLEAN,
-			valor FLOAT,
+			funcionarioID BIGINT NOT NULL,
+			dias INT NOT NULL,
+			inicio DATE NOT NULL,
+			vencimento DATE NOT NULL,
+			vencido BOOLEAN NOT NULL DEFAULT FALSE,
+			valor FLOAT NOT NULL,
+			pago BOOLEAN NOT NULL DEFAULT FALSE,
+			terco FLOAT NOT NULL DEFAULT 0,
+			tercoPago BOOLEAN NOT NULL DEFAULT FALSE,
 			FOREIGN KEY (funcionarioID) REFERENCES funcionario(funcionarioID)
 		);`,
 

@@ -19,7 +19,7 @@ Content-Type: application/json
 ### [COMMON USER] Criar nova pessoa - sucesso
 POST http://localhost:8080/pessoas
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTYyMjQwMDAsImlhdCI6MTc1NjIxNTU5NH0.Krx80D38APbgPFgm6X7KN6O4OVYY1JP1-T0i3lFhLyo
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsIm5vbWUiOiJhZG1pbiIsInBlcmZpbCI6ImFkbWluIiwiaXNzIjoiQXV0b0dSSCIsInN1YiI6IjEiLCJleHAiOjE3NTY0NDg2OTYsImlhdCI6MTc1NjQyNzA5Nn0.whSu8ltkYfSv3KX-MGCMpxTG5bFYc3Set4PViRwcVmA
 
 {
   "nome": "João da Silva",

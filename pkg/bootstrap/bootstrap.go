@@ -221,3 +221,21 @@ func BuildFaltaService(auth *service.AuthService) *service.FaltaService {
 
 	return service.NewFaltaService(auth, logRepo, faltaRepo)
 }
+
+func BuildFeriasService(auth *service.AuthService) *service.FeriasService {
+	createLog := func(ctx context.Context, l *entity.Log) (int64, error) {
+		return 0, repository.CreateLog(l)
+	}
+	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
+
+	repo := Adapter.NewFeriasRepositoryAdapter(
+		repository.CreateFerias,
+		repository.GetFeriasByFuncionarioID,
+		repository.GetFeriasByID,
+		repository.UpdateFerias,
+		repository.DeleteFerias,
+		repository.ListFerias,
+	)
+
+	return service.NewFeriasService(auth, logRepo, repo)
+}

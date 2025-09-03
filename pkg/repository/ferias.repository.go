@@ -10,10 +10,14 @@ import (
 
 // CreateFerias cria um novo período de férias
 func CreateFerias(f *entity.Ferias) error {
-	query := `INSERT INTO ferias (funcionarioID, dias, inicio, vencimento, vencido, valor)
-	          VALUES (?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO ferias 
+	(funcionarioID, dias, inicio, vencimento, vencido, valor, pago, terco, tercoPago)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	result, err := DB.Exec(query, f.FuncionarioID, f.Dias, f.Inicio, f.Vencimento, f.Vencido, f.Valor)
+	result, err := DB.Exec(query,
+		f.FuncionarioID, f.Dias, f.Inicio, f.Vencimento,
+		f.Vencido, f.Valor, f.Pago, f.Terco, f.TercoPago,
+	)
 	if err != nil {
 		return fmt.Errorf("erro ao inserir férias: %w", err)
 	}
@@ -26,16 +30,17 @@ func CreateFerias(f *entity.Ferias) error {
 	return nil
 }
 
-// GetFeriasByID busca férias por ID, incluindo os descansos
+// GetFeriasByID busca férias por ID, incluindo descansos
 func GetFeriasByID(id int64) (*entity.Ferias, error) {
-	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor
+	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor, pago, terco, tercoPago
 	          FROM ferias WHERE feriasID = ?`
 
 	row := DB.QueryRow(query, id)
 
 	var f entity.Ferias
 	var inicioStr, vencimentoStr string
-	if err := row.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr, &f.Vencido, &f.Valor); err != nil {
+	if err := row.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr,
+		&f.Vencido, &f.Valor, &f.Pago, &f.Terco, &f.TercoPago); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -52,7 +57,7 @@ func GetFeriasByID(id int64) (*entity.Ferias, error) {
 		return nil, fmt.Errorf("erro ao converter data de vencimento: %w", err)
 	}
 
-	// Carrega os descansos
+	// Carrega descansos
 	descansos, err := GetDescansosByFeriasID(f.ID)
 	if err != nil {
 		log.Printf("erro ao carregar descansos: %v", err)
@@ -68,17 +73,20 @@ func GetFeriasByID(id int64) (*entity.Ferias, error) {
 
 // UpdateFerias atualiza um período de férias
 func UpdateFerias(f *entity.Ferias) error {
-	query := `UPDATE ferias SET dias = ?, inicio = ?, vencimento = ?, vencido = ?, valor = ?
-	          WHERE feriasID = ?`
+	query := `UPDATE ferias SET dias = ?, inicio = ?, vencimento = ?, vencido = ?, 
+	          valor = ?, pago = ?, terco = ?, tercoPago = ? WHERE feriasID = ?`
 
-	_, err := DB.Exec(query, f.Dias, f.Inicio, f.Vencimento, f.Vencido, f.Valor, f.ID)
+	_, err := DB.Exec(query,
+		f.Dias, f.Inicio, f.Vencimento, f.Vencido,
+		f.Valor, f.Pago, f.Terco, f.TercoPago, f.ID,
+	)
 	if err != nil {
 		return fmt.Errorf("erro ao atualizar férias: %w", err)
 	}
 	return nil
 }
 
-// DeleteFerias remove um período de férias por ID
+// DeleteFerias remove um período de férias (por enquanto DELETE físico, futuramente -> soft delete)
 func DeleteFerias(id int64) error {
 	query := `DELETE FROM ferias WHERE feriasID = ?`
 	_, err := DB.Exec(query, id)
@@ -90,7 +98,7 @@ func DeleteFerias(id int64) error {
 
 // GetFeriasByFuncionarioID lista todas as férias de um funcionário (com descansos)
 func GetFeriasByFuncionarioID(funcionarioID int64) ([]*entity.Ferias, error) {
-	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor
+	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor, pago, terco, tercoPago
 	          FROM ferias WHERE funcionarioID = ?`
 
 	rows, err := DB.Query(query, funcionarioID)
@@ -107,7 +115,8 @@ func GetFeriasByFuncionarioID(funcionarioID int64) ([]*entity.Ferias, error) {
 	for rows.Next() {
 		var f entity.Ferias
 		var inicioStr, vencimentoStr string
-		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr, &f.Vencido, &f.Valor); err != nil {
+		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr,
+			&f.Vencido, &f.Valor, &f.Pago, &f.Terco, &f.TercoPago); err != nil {
 			log.Printf("erro ao ler férias: %v", err)
 			continue
 		}
@@ -121,7 +130,7 @@ func GetFeriasByFuncionarioID(funcionarioID int64) ([]*entity.Ferias, error) {
 			continue
 		}
 
-		// Carrega descansos para cada registro
+		// Carrega descansos
 		descansos, derr := GetDescansosByFeriasID(f.ID)
 		if derr != nil {
 			log.Printf("erro ao carregar descansos: %v", derr)
@@ -139,9 +148,9 @@ func GetFeriasByFuncionarioID(funcionarioID int64) ([]*entity.Ferias, error) {
 	return lista, nil
 }
 
-// ListFerias lista todos os registros de férias (sem carregar descansos)
-func ListFerias() ([]entity.Ferias, error) {
-	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor FROM ferias`
+// ListFerias lista todos os registros de férias
+func ListFerias() ([]*entity.Ferias, error) {
+	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor, pago, terco, tercoPago FROM ferias`
 
 	rows, err := DB.Query(query)
 	if err != nil {
@@ -153,11 +162,12 @@ func ListFerias() ([]entity.Ferias, error) {
 		}
 	}()
 
-	var lista []entity.Ferias
+	var lista []*entity.Ferias
 	for rows.Next() {
-		var f entity.Ferias
+		var f *entity.Ferias
 		var inicioStr, vencimentoStr string
-		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr, &f.Vencido, &f.Valor); err != nil {
+		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr,
+			&f.Vencido, &f.Valor, &f.Pago, &f.Terco, &f.TercoPago); err != nil {
 			log.Printf("erro ao ler férias: %v", err)
 			continue
 		}
@@ -179,25 +189,22 @@ func ListFerias() ([]entity.Ferias, error) {
 	return lista, nil
 }
 
-// GetFeriasAtivas retorna as férias não vencidas de um funcionário
+// GetFeriasAtivas retorna férias não vencidas
 func GetFeriasAtivas(funcionarioID int64) ([]*entity.Ferias, error) {
-	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor
+	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor, pago, terco, tercoPago
 			  FROM ferias WHERE funcionarioID = ? AND vencido = FALSE`
 
 	rows, err := DB.Query(query, funcionarioID)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao buscar férias ativas: %w", err)
 	}
-	defer func() {
-		if cerr := rows.Close(); cerr != nil {
-			log.Printf("erro ao fechar rows em GetFeriasAtivas: %v", cerr)
-		}
-	}()
+	defer rows.Close()
 
 	var lista []*entity.Ferias
 	for rows.Next() {
 		var f entity.Ferias
-		err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &f.Inicio, &f.Vencimento, &f.Vencido, &f.Valor)
+		err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &f.Inicio, &f.Vencimento,
+			&f.Vencido, &f.Valor, &f.Pago, &f.Terco, &f.TercoPago)
 		if err != nil {
 			return nil, fmt.Errorf("erro ao ler férias ativas: %w", err)
 		}
@@ -206,31 +213,62 @@ func GetFeriasAtivas(funcionarioID int64) ([]*entity.Ferias, error) {
 	return lista, nil
 }
 
-// GetFeriasVencidas retorna as férias já vencidas de um funcionário
+// GetFeriasVencidas retorna férias vencidas
 func GetFeriasVencidas(funcionarioID int64) ([]*entity.Ferias, error) {
-	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor
+	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor, pago, terco, tercoPago
 			  FROM ferias WHERE funcionarioID = ? AND vencido = TRUE`
 
 	rows, err := DB.Query(query, funcionarioID)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao buscar férias vencidas: %w", err)
 	}
-	defer func() {
-		if cerr := rows.Close(); cerr != nil {
-			log.Printf("erro ao fechar rows em GetFeriasVencidas: %v", cerr)
-		}
-	}()
+	defer rows.Close()
 
 	var lista []*entity.Ferias
 	for rows.Next() {
 		var f entity.Ferias
-		err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &f.Inicio, &f.Vencimento, &f.Vencido, &f.Valor)
+		err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &f.Inicio, &f.Vencimento,
+			&f.Vencido, &f.Valor, &f.Pago, &f.Terco, &f.TercoPago)
 		if err != nil {
 			return nil, fmt.Errorf("erro ao ler férias vencidas: %w", err)
 		}
 		lista = append(lista, &f)
 	}
 	return lista, nil
+}
+
+// GetFeriasNaoPagas retorna férias não pagas
+func GetFeriasNaoPagas(funcionarioID int64) ([]*entity.Ferias, error) {
+	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor, pago, terco, tercoPago
+			  FROM ferias WHERE funcionarioID = ? AND pago = FALSE`
+
+	rows, err := DB.Query(query, funcionarioID)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao buscar férias não pagas: %w", err)
+	}
+	defer rows.Close()
+
+	var lista []*entity.Ferias
+	for rows.Next() {
+		var f entity.Ferias
+		err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &f.Inicio, &f.Vencimento,
+			&f.Vencido, &f.Valor, &f.Pago, &f.Terco, &f.TercoPago)
+		if err != nil {
+			return nil, fmt.Errorf("erro ao ler férias não pagas: %w", err)
+		}
+		lista = append(lista, &f)
+	}
+	return lista, nil
+}
+
+// MarcarFeriasComoPagas marca férias como quitadas
+func MarcarFeriasComoPagas(feriasID int64) error {
+	query := `UPDATE ferias SET pago = TRUE, tercoPago = TRUE WHERE feriasID = ?`
+	_, err := DB.Exec(query, feriasID)
+	if err != nil {
+		return fmt.Errorf("erro ao marcar férias como pagas: %w", err)
+	}
+	return nil
 }
 
 // ConsumirDiasFerias subtrai uma quantidade de dias de férias

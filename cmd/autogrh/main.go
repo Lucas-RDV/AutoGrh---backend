@@ -24,7 +24,8 @@ func main() {
 	funcSvc := Bootstrap.BuildFuncionarioService(auth)
 	documentoSvc := Bootstrap.BuildDocumentoService(auth)
 	faltaSvc := Bootstrap.BuildFaltaService(auth)
-	routes := router.New(auth, pessoaSvc, funcSvc, documentoSvc, faltaSvc)
+	feriasSvc := Bootstrap.BuildFeriasService(auth)
+	routes := router.New(auth, pessoaSvc, funcSvc, documentoSvc, faltaSvc, feriasSvc)
 
 	cors := middleware.NewCORS(middleware.CORSConfig{
 

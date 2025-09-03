@@ -15,7 +15,8 @@ func New(
 	pessoaSvc *service.PessoaService,
 	funcionarioSvc *service.FuncionarioService,
 	documentoSvc *service.DocumentoService,
-	faltaSvc *service.FaltaService, // novo
+	faltaSvc *service.FaltaService,
+	feriasSvc *service.FeriasService,
 ) http.Handler {
 	r := chi.NewRouter()
 
@@ -25,7 +26,8 @@ func New(
 	pessoaCtl := controller.NewPessoaController(pessoaSvc)
 	funcionarioCtl := controller.NewFuncionarioController(funcionarioSvc)
 	documentoCtl := controller.NewDocumentoController(documentoSvc)
-	faltaCtl := controller.NewFaltaController(faltaSvc) // novo
+	faltaCtl := controller.NewFaltaController(faltaSvc)
+	feriasCtl := controller.NewFeriasController(feriasSvc)
 
 	// Rota pública
 	r.Post("/auth/login", authCtl.Login)
@@ -84,6 +86,9 @@ func New(
 		// Faltas dentro de funcionário
 		r.With(middleware.RequirePerm(auth, "falta:list")).Get("/{id}/faltas", faltaCtl.GetFaltasByFuncionarioID)
 		r.With(middleware.RequirePerm(auth, "falta:create")).Post("/{id}/faltas", faltaCtl.CreateFalta)
+
+		// Ferias dentro de funcionário
+		r.With(middleware.RequirePerm(auth, "ferias:list")).Get("/{id}/ferias", feriasCtl.GetFeriasByFuncionarioID)
 	})
 
 	// Rotas diretas de Documentos
@@ -101,5 +106,13 @@ func New(
 		r.With(middleware.RequirePerm(auth, "falta:delete")).Delete("/{id}", faltaCtl.DeleteFalta)
 	})
 
+	//rotas diretas de Ferias
+	r.Route("/ferias", func(r chi.Router) {
+		r.With(middleware.RequirePerm(auth, "ferias:list")).Get("/", feriasCtl.ListFerias)
+		r.With(middleware.RequirePerm(auth, "ferias:read")).Get("/{id}", feriasCtl.GetFeriasByID)
+		r.With(middleware.RequirePerm(auth, "ferias:update")).Put("/{id}/vencida", feriasCtl.MarcarComoVencidas)
+		r.With(middleware.RequirePerm(auth, "ferias:update")).Put("/{id}/terco-pago", feriasCtl.MarcarTercoComoPago)
+		r.With(middleware.RequirePerm(auth, "ferias:read")).Get("/{id}/saldo", feriasCtl.GetSaldoFerias)
+	})
 	return r
 }

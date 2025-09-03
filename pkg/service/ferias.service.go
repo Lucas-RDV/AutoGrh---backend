@@ -9,14 +9,20 @@ import (
 
 // FeriasRepository define as operações de acesso ao banco
 type FeriasRepository interface {
-	Create(f *entity.Ferias) error
-	GetFeriasByFuncionarioID(funcionarioID int64) ([]*entity.Ferias, error)
-	GetByID(id int64) (*entity.Ferias, error)
-	Update(f *entity.Ferias) error
-	Delete(id int64) error
-	List() ([]*entity.Ferias, error)
+	Create(ctx context.Context, f *entity.Ferias) error
+	GetFeriasByFuncionarioID(ctx context.Context, funcionarioID int64) ([]*entity.Ferias, error)
+	GetByID(ctx context.Context, id int64) (*entity.Ferias, error)
+	Update(ctx context.Context, f *entity.Ferias) error
+	Delete(ctx context.Context, id int64) error
+	List(ctx context.Context) ([]*entity.Ferias, error)
 }
 
+type SaldoFeriasDTO struct {
+	DiasRestantes int     `json:"dias_restantes"`
+	Valor         float64 `json:"valor"`
+	Terco         float64 `json:"terco"`
+	Total         float64 `json:"total"`
+}
 type FeriasService struct {
 	authService *AuthService
 	logRepo     LogRepository
@@ -31,23 +37,21 @@ func NewFeriasService(auth *AuthService, logRepo LogRepository, repo FeriasRepos
 	}
 }
 
-// CriarFerias insere um novo direito de férias
+// CRUD
+
 func (s *FeriasService) CriarFerias(ctx context.Context, claims Claims, funcionarioID int64, dias int, valor float64, inicio time.Time) (*entity.Ferias, error) {
 	if err := s.authService.Authorize(ctx, claims, "ferias:create"); err != nil {
 		return nil, err
 	}
 
-	f := entity.NewFerias(inicio)
-	f.FuncionarioID = funcionarioID
-	f.Dias = dias
+	f := entity.NewFerias(funcionarioID, inicio, dias)
 	f.Valor = valor
 	f.Vencido = false
 
-	if err := s.repo.Create(f); err != nil {
+	if err := s.repo.Create(ctx, f); err != nil {
 		return nil, fmt.Errorf("erro ao criar férias: %w", err)
 	}
 
-	// Log
 	_, _ = s.logRepo.Create(ctx, LogEntry{
 		EventoID:  3, // CRIAR
 		UsuarioID: &claims.UserID,
@@ -58,56 +62,32 @@ func (s *FeriasService) CriarFerias(ctx context.Context, claims Claims, funciona
 	return f, nil
 }
 
-// GetFeriasByFuncionarioID retorna as férias de um funcionário
+func (s *FeriasService) GetFeriasByID(ctx context.Context, claims Claims, id int64) (*entity.Ferias, error) {
+	if err := s.authService.Authorize(ctx, claims, "ferias:read"); err != nil {
+		return nil, err
+	}
+	return s.repo.GetByID(ctx, id)
+}
+
 func (s *FeriasService) GetFeriasByFuncionarioID(ctx context.Context, claims Claims, funcionarioID int64) ([]*entity.Ferias, error) {
 	if err := s.authService.Authorize(ctx, claims, "ferias:list"); err != nil {
 		return nil, err
 	}
-	return s.repo.GetFeriasByFuncionarioID(funcionarioID)
+	return s.repo.GetFeriasByFuncionarioID(ctx, funcionarioID)
 }
 
-// ListFerias retorna todas as férias cadastradas
 func (s *FeriasService) ListFerias(ctx context.Context, claims Claims) ([]*entity.Ferias, error) {
 	if err := s.authService.Authorize(ctx, claims, "ferias:list"); err != nil {
 		return nil, err
 	}
-	return s.repo.List()
+	return s.repo.List(ctx)
 }
 
-// MarcarComoVencidas atualiza o campo Vencido das férias
-func (s *FeriasService) MarcarComoVencidas(ctx context.Context, claims Claims, id int64) error {
-	if err := s.authService.Authorize(ctx, claims, "ferias:update"); err != nil {
-		return err
-	}
-
-	f, err := s.repo.GetByID(id)
-	if err != nil {
-		return fmt.Errorf("erro ao buscar férias: %w", err)
-	}
-	if f == nil {
-		return fmt.Errorf("férias não encontradas")
-	}
-
-	f.Vencido = true
-	if err := s.repo.Update(f); err != nil {
-		return fmt.Errorf("erro ao atualizar férias: %w", err)
-	}
-
-	_, _ = s.logRepo.Create(ctx, LogEntry{
-		EventoID:  4, // ATUALIZAR
-		UsuarioID: &claims.UserID,
-		Quando:    s.authService.clock(),
-		Detalhe:   fmt.Sprintf("Férias marcadas como vencidas id=%d", id),
-	})
-	return nil
-}
-
-// AtualizarFerias altera os dados de férias
 func (s *FeriasService) AtualizarFerias(ctx context.Context, claims Claims, f *entity.Ferias) error {
 	if err := s.authService.Authorize(ctx, claims, "ferias:update"); err != nil {
 		return err
 	}
-	if err := s.repo.Update(f); err != nil {
+	if err := s.repo.Update(ctx, f); err != nil {
 		return fmt.Errorf("erro ao atualizar férias: %w", err)
 	}
 	_, _ = s.logRepo.Create(ctx, LogEntry{
@@ -119,12 +99,11 @@ func (s *FeriasService) AtualizarFerias(ctx context.Context, claims Claims, f *e
 	return nil
 }
 
-// DeletarFerias remove um registro de férias
 func (s *FeriasService) DeletarFerias(ctx context.Context, claims Claims, id int64) error {
 	if err := s.authService.Authorize(ctx, claims, "ferias:delete"); err != nil {
 		return err
 	}
-	if err := s.repo.Delete(id); err != nil {
+	if err := s.repo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("erro ao deletar férias: %w", err)
 	}
 	_, _ = s.logRepo.Create(ctx, LogEntry{
@@ -134,4 +113,79 @@ func (s *FeriasService) DeletarFerias(ctx context.Context, claims Claims, id int
 		Detalhe:   fmt.Sprintf("Férias deletadas id=%d", id),
 	})
 	return nil
+}
+
+// Regras de negócio
+
+// MarcarComoVencidas define que o período expirou
+func (s *FeriasService) MarcarComoVencidas(ctx context.Context, claims Claims, id int64) error {
+	if err := s.authService.Authorize(ctx, claims, "ferias:update"); err != nil {
+		return err
+	}
+	f, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("erro ao buscar férias: %w", err)
+	}
+	if f == nil {
+		return fmt.Errorf("férias não encontradas")
+	}
+	f.Vencido = true
+	if err := s.repo.Update(ctx, f); err != nil {
+		return fmt.Errorf("erro ao atualizar férias: %w", err)
+	}
+	_, _ = s.logRepo.Create(ctx, LogEntry{
+		EventoID:  4,
+		UsuarioID: &claims.UserID,
+		Quando:    s.authService.clock(),
+		Detalhe:   fmt.Sprintf("Férias vencidas id=%d", id),
+	})
+	return nil
+}
+
+// MarcarTercoComoPago define que o terço já foi pago
+func (s *FeriasService) MarcarTercoComoPago(ctx context.Context, claims Claims, id int64) error {
+	if err := s.authService.Authorize(ctx, claims, "ferias:update"); err != nil {
+		return err
+	}
+	f, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("erro ao buscar férias: %w", err)
+	}
+	if f == nil {
+		return fmt.Errorf("férias não encontradas")
+	}
+	f.TercoPago = true
+	if err := s.repo.Update(ctx, f); err != nil {
+		return fmt.Errorf("erro ao atualizar férias: %w", err)
+	}
+	_, _ = s.logRepo.Create(ctx, LogEntry{
+		EventoID:  4,
+		UsuarioID: &claims.UserID,
+		Quando:    s.authService.clock(),
+		Detalhe:   fmt.Sprintf("Terço pago de férias id=%d", id),
+	})
+	return nil
+}
+
+// CalcularSaldo retorna os dias e valores restantes das férias
+func (s *FeriasService) CalcularSaldo(f *entity.Ferias, salario float64) (*SaldoFeriasDTO, error) {
+	diasRestantes := f.DiasRestantes()
+	valorDias := (salario / 30.0) * float64(diasRestantes)
+	terco := f.Terco
+
+	var total float64
+	if !f.TercoPago {
+		total = valorDias + terco
+	} else {
+		total = valorDias
+	}
+
+	dto := &SaldoFeriasDTO{
+		DiasRestantes: diasRestantes,
+		Valor:         valorDias,
+		Terco:         terco,
+		Total:         total,
+	}
+
+	return dto, nil
 }
