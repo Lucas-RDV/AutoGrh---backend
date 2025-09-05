@@ -32,7 +32,7 @@ func GetUsuarioByID(id int64) (*entity.Usuario, error) {
 	row := DB.QueryRow(query, id)
 
 	var u entity.Usuario
-	if err := row.Scan(&u.ID, &u.Username, &u.Password, &u.IsAdmin, u.Ativo); err != nil {
+	if err := row.Scan(&u.ID, &u.Username, &u.Password, &u.IsAdmin, &u.Ativo); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -43,8 +43,8 @@ func GetUsuarioByID(id int64) (*entity.Usuario, error) {
 
 // UpdateUsuario atualiza um usuário existente
 func UpdateUsuario(u *entity.Usuario) error {
-	query := `UPDATE usuario SET username = ?, password = ?, isAdmin = ? WHERE usuarioID = ?`
-	_, err := DB.Exec(query, u.Username, u.Password, u.IsAdmin, u.ID)
+	query := `UPDATE usuario SET username = ?, password = ?, isAdmin = ?, ativo = ? WHERE usuarioID = ?`
+	_, err := DB.Exec(query, u.Username, u.Password, u.IsAdmin, u.Ativo, u.ID)
 	if err != nil {
 		return fmt.Errorf("erro ao atualizar usuário: %w", err)
 	}
@@ -99,7 +99,7 @@ func GetUsuarioByUsername(ctx context.Context, username string) (*entity.Usuario
 		return nil, nil // nada a buscar
 	}
 
-	const q = `SELECT usuarioID, username, password, isAdmin, ativo FROM usuario WHERE username = ? = TRUE LIMIT 1`
+	const q = `SELECT usuarioID, username, password, isAdmin, ativo FROM usuario WHERE username = ? LIMIT 1`
 	row := DB.QueryRowContext(ctx, q, u)
 
 	var out entity.Usuario

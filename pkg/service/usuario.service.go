@@ -81,8 +81,8 @@ func (s *UsuarioService) Update(ctx context.Context, id int64, input UpdateUsuar
 		user.Username = *input.Username
 	}
 
-	if input.Password != nil {
-		hashed, err := bcrypt.GenerateFromPassword([]byte(*input.Password), 12)
+	if input.Senha != nil {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(*input.Senha), 12)
 		if err != nil {
 			return fmt.Errorf("erro ao gerar hash da senha: %w", err)
 		}
@@ -126,6 +126,6 @@ type CreateUsuarioInput struct {
 // UpdateUsuarioInput representa os dados para atualizar um usuário existente
 type UpdateUsuarioInput struct {
 	Username *string `json:"username"`
-	Password *string `json:"password"`
+	Senha    *string `json:"senha"`
 	IsAdmin  *bool   `json:"isAdmin"`
 }

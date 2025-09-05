@@ -127,7 +127,7 @@ func (c *FaltaController) GetFaltasByFuncionarioID(w http.ResponseWriter, r *htt
 		return
 	}
 
-	funcionarioIDStr := chi.URLParam(r, "funcionarioID")
+	funcionarioIDStr := chi.URLParam(r, "id")
 	funcionarioID, err := strconv.ParseInt(funcionarioIDStr, 10, 64)
 	if err != nil {
 		httpjson.BadRequest(w, "funcionarioID inválido")

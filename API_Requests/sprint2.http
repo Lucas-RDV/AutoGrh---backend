@@ -1,0 +1,232 @@
+################################################################################
+# GRUPO 1 - LOGIN
+################################################################################
+
+### Login como Admin
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "login": "admin",
+  "senha": "adm123"
+}
+
+> {% client.global.set("token_admin", response.body.token) %}
+
+
+################################################################################
+# GRUPO 2 - CRIAÇÃO
+################################################################################
+
+### Criar usuário comum
+POST http://localhost:8080/admin/usuarios
+Authorization: Bearer {{token_admin}}
+Content-Type: application/json
+
+{
+  "username": "usuario1",
+  "password": "user123",
+  "isAdmin": false
+}
+
+### Criar pessoa
+POST http://localhost:8080/pessoas
+Authorization: Bearer {{token_admin}}
+Content-Type: application/json
+
+{
+  "nome": "João da Silva",
+  "cpf": "12345678900",
+  "rg": "11223344",
+  "endereco": "Rua das Flores, 100",
+  "contato": "11999999999",
+  "contatoEmergencia": "11888888888"
+}
+
+> {% client.global.set("pessoa_id", response.body.id) %}
+
+### Criar funcionário
+POST http://localhost:8080/funcionarios
+Authorization: Bearer {{token_admin}}
+Content-Type: application/json
+
+{
+  "pessoaID": {{pessoa_id}},
+  "pis": "12345678900",
+  "ctpf": "98765432100",
+  "nascimento": "1990-05-20",
+  "admissao": "2023-01-10",
+  "cargo": "Analista Júnior",
+  "salarioInicial": 3000.50,
+  "feriasDisponiveis": 30
+}
+
+> {% client.global.set("funcionario_id", response.body.id) %}
+
+### Upload de documento do funcionário (arquivo local: ./teste.pdf)
+POST http://localhost:8080/funcionarios/{{funcionario_id}}/documentos
+Authorization: Bearer {{token_admin}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="teste.pdf"
+Content-Type: application/pdf
+
+< ./teste.pdf
+--WebAppBoundary--
+
+> {% client.global.set("documento_id", response.body.id) %}
+
+### Criar falta para funcionário
+POST http://localhost:8080/funcionarios/{{funcionario_id}}/faltas
+Authorization: Bearer {{token_admin}}
+Content-Type: application/json
+
+{
+  "funcionario_id": {{funcionario_id}},
+  "quantidade": 1,
+  "mes": "2025-09-01T00:00:00Z"
+}
+
+> {% client.global.set("falta_id", response.body.id) %}
+
+################################################################################
+# GRUPO 3 - LISTAGEM
+################################################################################
+
+### Listar usuários
+GET http://localhost:8080/admin/usuarios
+Authorization: Bearer {{token_admin}}
+
+> {%
+    // pega o id do usuario1 e salva em {{usuario_id}}
+    const arr = response.body;
+    for (const u of arr) {
+        if (u.login === "usuario1") { client.global.set("usuario_id", u.id); break; }
+    }
+%}
+
+### Login como usuario1
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "login": "usuario1",
+  "senha": "user123"
+}
+
+> {% client.global.set("token_user", response.body.token) %}
+
+### Listar pessoas
+GET http://localhost:8080/pessoas
+Authorization: Bearer {{token_admin}}
+
+### Listar funcionários
+GET http://localhost:8080/funcionarios
+Authorization: Bearer {{token_admin}}
+
+### Listar documentos do funcionário
+GET http://localhost:8080/funcionarios/{{funcionario_id}}/documentos
+Authorization: Bearer {{token_admin}}
+
+### Listar faltas do funcionário
+GET http://localhost:8080/funcionarios/{{funcionario_id}}/faltas
+Authorization: Bearer {{token_admin}}
+
+### Download documento (antes de deletar)
+GET http://localhost:8080/documentos/{{documento_id}}/download
+Authorization: Bearer {{token_admin}}
+
+
+################################################################################
+# GRUPO 4 - ATUALIZAÇÃO (não alterar "ativo")
+################################################################################
+
+### Atualizar usuário
+PUT http://localhost:8080/admin/usuarios/{{usuario_id}}
+Authorization: Bearer {{token_admin}}
+Content-Type: application/json
+
+{
+  "senha": "novaSenha123"
+}
+
+### Login como usuario1 usando senha antiga
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "login": "usuario1",
+  "senha": "user123"
+}
+
+### Login como usuario1 usando senha nova
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "login": "usuario1",
+  "senha": "novasenha123"
+}
+
+### Atualizar pessoa
+PUT http://localhost:8080/pessoas/{{pessoa_id}}
+Authorization: Bearer {{token_admin}}
+Content-Type: application/json
+
+{
+  "nome": "João da Silva Atualizado",
+  "cpf": "12345678900",
+  "rg": "11223344",
+  "endereco": "Rua das Palmeiras, 200",
+  "contato": "11777777777",
+  "contatoEmergencia": "11666666666"
+}
+
+### Atualizar funcionário
+PUT http://localhost:8080/funcionarios/{{funcionario_id}}
+Authorization: Bearer {{token_admin}}
+Content-Type: application/json
+
+{
+  "pessoaID": {{pessoa_id}},
+  "pis": "12345678900",
+  "ctpf": "98765432100",
+  "nascimento": "1990-05-20",
+  "admissao": "2023-01-10",
+  "cargo": "Analista Pleno",
+  "salarioInicial": 4200.75,
+  "feriasDisponiveis": 28
+}
+
+
+################################################################################
+# GRUPO 5 - EXCLUSÃO (
+################################################################################
+
+### delete usuário
+DELETE http://localhost:8080/admin/usuarios/{{usuario_id}}
+Authorization: Bearer {{token_admin}}
+
+### reativar usuario1
+POST http://localhost:8080/admin/usuarios
+Authorization: Bearer {{token_admin}}
+Content-Type: application/json
+
+{
+  "username": "usuario1",
+  "password": "123",
+  "isAdmin": false
+}
+
+### delete funcionário
+DELETE http://localhost:8080/funcionarios/{{funcionario_id}}
+Authorization: Bearer {{token_admin}}
+
+### delete falta
+DELETE http://localhost:8080/faltas/{{falta_id}}
+authorization: bearer {{token_admin}}
+
+### delete documento
+DELETE http://localhost:8080/documentos/{{documento_id}}
+Authorization: Bearer {{token_admin}}
