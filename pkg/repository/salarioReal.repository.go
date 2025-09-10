@@ -3,11 +3,11 @@ package repository
 import (
 	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/utils/dateStringToTime"
-	"AutoGRH/pkg/utils/nullTimeToPtr"
 	"AutoGRH/pkg/utils/ptrToNullTime"
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 )
 
 // CreateSalarioReal insere um novo salário real no banco de dados
@@ -33,7 +33,12 @@ func CreateSalarioReal(s *entity.SalarioReal) error {
 
 // GetSalariosReaisByFuncionarioID retorna o histórico de salários reais de um funcionário
 func GetSalariosReaisByFuncionarioID(funcionarioID int64) ([]*entity.SalarioReal, error) {
-	query := `SELECT salarioRealID, funcionarioID, inicio, fim, valor FROM salario_real WHERE funcionarioID = ?`
+	query := `
+		SELECT salarioRealID, funcionarioID, inicio, fim, valor
+		FROM salario_real
+		WHERE funcionarioID = ?
+		ORDER BY inicio DESC
+	`
 
 	rows, err := DB.Query(query, funcionarioID)
 	if err != nil {
@@ -49,50 +54,74 @@ func GetSalariosReaisByFuncionarioID(funcionarioID int64) ([]*entity.SalarioReal
 	for rows.Next() {
 		var s entity.SalarioReal
 		var inicioStr string
-		var fim sql.NullTime
+		var fimStr sql.NullString
 
-		err := rows.Scan(&s.ID, &s.FuncionarioID, &inicioStr, &fim, &s.Valor)
-		if err != nil {
+		if err := rows.Scan(&s.ID, &s.FuncionarioID, &inicioStr, &fimStr, &s.Valor); err != nil {
 			return nil, fmt.Errorf("erro ao ler salário real: %w", err)
 		}
 
-		s.Inicio, err = dateStringToTime.DateStringToTime(inicioStr)
+		tInicio, err := dateStringToTime.DateStringToTime(inicioStr)
 		if err != nil {
 			return nil, fmt.Errorf("erro ao converter inicio: %w", err)
 		}
-		s.Fim = nullTimeToPtr.NullTimeToPtr(fim)
+		s.Inicio = tInicio
+
+		if fimStr.Valid && fimStr.String != "" && fimStr.String != "0000-00-00" && fimStr.String != "0000-00-00 00:00:00" {
+			tFim, err := dateStringToTime.DateStringToTime(fimStr.String)
+			if err != nil {
+				return nil, fmt.Errorf("erro ao converter fim: %w", err)
+			}
+			s.Fim = &tFim
+		} else {
+			s.Fim = nil
+		}
 
 		lista = append(lista, &s)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar salários reais: %w", err)
+	}
 	return lista, nil
 }
 
 // GetSalarioRealAtual retorna o salário real ativo de um funcionário (sem fim definido)
 func GetSalarioRealAtual(funcionarioID int64) (*entity.SalarioReal, error) {
-	query := `SELECT salarioRealID, funcionarioID, inicio, fim, valor 
-			  FROM salario_real WHERE funcionarioID = ? AND fim IS NULL LIMIT 1`
-
-	row := DB.QueryRow(query, funcionarioID)
+	const q = `
+		SELECT salarioRealID, funcionarioID, inicio, fim, valor
+		FROM salario_real
+		WHERE funcionarioID = ?
+		  AND fim IS NULL 
+		ORDER BY inicio DESC
+		LIMIT 1`
+	row := DB.QueryRow(q, funcionarioID)
 
 	var s entity.SalarioReal
 	var inicioStr string
-	var fim sql.NullTime
+	var fimStr sql.NullString
 
-	err := row.Scan(&s.ID, &s.FuncionarioID, &inicioStr, &fim, &s.Valor)
-	if err != nil {
+	if err := row.Scan(&s.ID, &s.FuncionarioID, &inicioStr, &fimStr, &s.Valor); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("erro ao buscar salário real atual: %w", err)
 	}
 
-	s.Inicio, err = dateStringToTime.DateStringToTime(inicioStr)
+	tInicio, err := dateStringToTime.DateStringToTime(inicioStr)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao converter inicio: %w", err)
 	}
-	s.Fim = nullTimeToPtr.NullTimeToPtr(fim)
+	s.Inicio = tInicio
 
+	if fimStr.Valid && fimStr.String != "" && fimStr.String != "0000-00-00 00:00:00" {
+		tFim, err := dateStringToTime.DateStringToTime(fimStr.String)
+		if err != nil {
+			return nil, fmt.Errorf("erro ao converter fim: %w", err)
+		}
+		s.Fim = &tFim
+	} else {
+		s.Fim = nil
+	}
 	return &s, nil
 }
 
@@ -119,4 +148,10 @@ func DeleteSalarioReal(id int64) error {
 		return fmt.Errorf("erro ao deletar salário real: %w", err)
 	}
 	return nil
+}
+
+func EncerrarSalarioReal(id int64, fim time.Time) error {
+	nt := ptrToNullTime.PtrToNullTime(&fim)
+	_, err := DB.Exec(`UPDATE salario_real SET fim=? WHERE salarioRealID=?`, nt, id)
+	return err
 }

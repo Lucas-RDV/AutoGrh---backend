@@ -1,6 +1,7 @@
 package Bootstrap
 
 import (
+	"AutoGRH/pkg/worker"
 	"context"
 	"os"
 	"sort"
@@ -138,6 +139,23 @@ func ConnectDB() error {
 	return repository.DB.PingContext(context.Background())
 }
 
+func InitWorkers(
+	feriasSvc *service.FeriasService,
+	descansoSvc *service.DescansoService,
+	salarioRealSvc *service.SalarioRealService,
+	funcionarioSvc *service.FuncionarioService,
+	faltaSvc *service.FaltaService,
+) {
+	feriasWorker := worker.NewFeriasWorker(
+		feriasSvc,
+		descansoSvc,
+		salarioRealSvc,
+		funcionarioSvc,
+		faltaSvc,
+	)
+	feriasWorker.Start()
+}
+
 func BuildAuth(app AppConfig) *service.AuthService {
 	tm := jwtm.NewHS256Manager([]byte(app.JWTSecret))
 	userRepo := Adapter.NewUserRepositoryAdapter(repository.GetUsuarioByUsername, nil)
@@ -238,4 +256,57 @@ func BuildFeriasService(auth *service.AuthService) *service.FeriasService {
 	)
 
 	return service.NewFeriasService(auth, logRepo, repo)
+}
+
+func BuildDescansoService(auth *service.AuthService) *service.DescansoService {
+	createLog := func(ctx context.Context, l *entity.Log) (int64, error) {
+		return 0, repository.CreateLog(l)
+	}
+	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
+
+	repo := Adapter.NewDescansoRepositoryAdapter(
+		repository.CreateDescanso,
+		repository.GetDescansoByID,
+		repository.UpdateDescanso,
+		repository.DeleteDescanso,
+		repository.GetDescansosByFeriasID,
+		repository.GetDescansosByFuncionarioID,
+		repository.GetDescansosAprovados,
+		repository.GetDescansosPendentes,
+	)
+
+	return service.NewDescansoService(auth, logRepo, repo)
+}
+
+func BuildSalarioService(auth *service.AuthService) *service.SalarioService {
+	createLog := func(ctx context.Context, l *entity.Log) (int64, error) {
+		return 0, repository.CreateLog(l)
+	}
+	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
+
+	repo := Adapter.NewSalarioRepositoryAdapter(
+		repository.CreateSalario,
+		repository.GetSalariosByFuncionarioID,
+		repository.UpdateSalario,
+		repository.DeleteSalario,
+	)
+
+	return service.NewSalarioService(auth, logRepo, repo)
+}
+
+func BuildSalarioRealService(auth *service.AuthService) *service.SalarioRealService {
+	createLog := func(ctx context.Context, l *entity.Log) (int64, error) {
+		return 0, repository.CreateLog(l)
+	}
+	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
+
+	repo := Adapter.NewSalarioRealRepositoryAdapter(
+		repository.CreateSalarioReal,
+		repository.GetSalariosReaisByFuncionarioID,
+		repository.GetSalarioRealAtual,
+		repository.UpdateSalarioReal,
+		repository.DeleteSalarioReal,
+	)
+
+	return service.NewSalarioRealService(auth, logRepo, repo)
 }

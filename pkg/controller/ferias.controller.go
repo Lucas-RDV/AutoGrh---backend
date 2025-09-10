@@ -70,7 +70,7 @@ func (c *FeriasController) GetFeriasByFuncionarioID(w http.ResponseWriter, r *ht
 		return
 	}
 
-	funcionarioIDStr := chi.URLParam(r, "funcionarioID")
+	funcionarioIDStr := chi.URLParam(r, "id")
 	funcionarioID, err := strconv.ParseInt(funcionarioIDStr, 10, 64)
 	if err != nil {
 		httpjson.BadRequest(w, "funcionarioID inválido")
@@ -158,10 +158,8 @@ func (c *FeriasController) GetSaldoFerias(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	salario := ferias.Valor
-
-	// Calcular saldo
-	saldo, err := c.feriasService.CalcularSaldo(ferias, salario)
+	// Calcular saldo (agora integrado com salário real atual)
+	saldo, err := c.feriasService.CalcularSaldo(r.Context(), claims, ferias)
 	if err != nil {
 		httpjson.Internal(w, err.Error())
 		return

@@ -2,9 +2,9 @@ package service
 
 import (
 	"AutoGRH/pkg/entity"
+	"AutoGRH/pkg/repository"
 	"context"
 	"fmt"
-	"time"
 )
 
 // SalarioRepository define as operações de acesso a dados para salários registrados
@@ -30,15 +30,26 @@ func NewSalarioService(auth *AuthService, logRepo LogRepository, repo SalarioRep
 	}
 }
 
-// CriarSalario insere um novo salário registrado (não encerra automaticamente o anterior)
+// CriarSalario encerra o salário atual (se houver) e insere um novo
 func (s *SalarioService) CriarSalario(ctx context.Context, claims Claims, funcionarioID int64, valor float64) (*entity.Salario, error) {
 	if err := s.authService.Authorize(ctx, claims, "salario:create"); err != nil {
 		return nil, err
 	}
 
+	atual, err := repository.GetSalarioAtual(funcionarioID)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao verificar salário atual: %w", err)
+	}
+	if atual != nil && atual.Fim == nil {
+		now := s.authService.clock()
+		if err := repository.EncerrarSalario(atual.ID, now); err != nil {
+			return nil, fmt.Errorf("erro ao encerrar salário atual: %w", err)
+		}
+	}
+
 	novo := &entity.Salario{
 		FuncionarioID: funcionarioID,
-		Inicio:        time.Now(),
+		Inicio:        s.authService.clock(),
 		Valor:         valor,
 		Fim:           nil,
 	}
@@ -46,12 +57,11 @@ func (s *SalarioService) CriarSalario(ctx context.Context, claims Claims, funcio
 		return nil, fmt.Errorf("erro ao criar salário: %w", err)
 	}
 
-	// Log
 	_, _ = s.logRepo.Create(ctx, LogEntry{
 		EventoID:  3, // CRIAR
 		UsuarioID: &claims.UserID,
 		Quando:    s.authService.clock(),
-		Detalhe:   fmt.Sprintf("Salário registrado criado funcionarioID=%d valor=%.2f", funcionarioID, valor),
+		Detalhe:   fmt.Sprintf("Salário criado funcionarioID=%d valor=%.2f", funcionarioID, valor),
 	})
 
 	return novo, nil

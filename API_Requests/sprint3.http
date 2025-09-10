@@ -1,0 +1,141 @@
+### Variáveis globais
+@baseUrl = http://localhost:8080
+@token = {{token}}
+@pessoaId = {{pessoaId}}
+@funcionarioId = {{funcionarioId}}
+@feriasId = {{feriasId}}
+@descansoId = {{descansoId}}
+@salarioId = {{salarioId}}
+@salarioRealId = {{salarioRealId}}
+
+### ========== AUTENTICAÇÃO ==========
+
+### Login (usuário admin já seedado no banco)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "login": "admin",
+  "senha": "adm123"
+}
+
+> {% client.global.set("token", response.body.token) %}
+
+
+
+### ========== PESSOAS E FUNCIONÁRIOS ==========
+
+### Criar pessoa
+POST {{baseUrl}}/pessoas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "João da Silva",
+  "cpf": "12345678900",
+  "rg": "11223344",
+  "endereco": "Rua das Flores, 100",
+  "contato": "11999999999",
+  "contatoEmergencia": "11888888888"
+}
+
+> {% client.global.set("pessoaId", response.body.id) %}
+
+### Criar funcionário
+POST {{baseUrl}}/funcionarios
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "pessoaID": {{pessoaId}},
+  "pis": "12345678900",
+  "ctpf": "98765432100",
+  "nascimento": "1990-05-20",
+  "admissao": "2024-01-10",
+  "cargo": "Analista",
+  "salarioInicial": 3000.50,
+  "feriasDisponiveis": 30
+}
+
+> {% client.global.set("funcionarioId", response.body.id) %}
+
+
+
+### ========== SALÁRIOS ==========
+
+### Criar salário (funcionário no path)
+POST {{baseUrl}}/funcionarios/{{funcionarioId}}/salarios
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "valor": 3000
+}
+
+### Listar salários do funcionário
+GET {{baseUrl}}/funcionarios/{{funcionarioId}}/salarios
+Authorization: Bearer {{token}}
+
+### Criar salário real (funcionário no path)
+POST {{baseUrl}}/funcionarios/{{funcionarioId}}/salarios-reais
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "valor": 2900
+}
+
+### Listar salários reais do funcionário (histórico)
+GET {{baseUrl}}/funcionarios/{{funcionarioId}}/salarios-reais
+Authorization: Bearer {{token}}
+
+### Obter salário real atual do funcionário
+GET {{baseUrl}}/funcionarios/{{funcionarioId}}/salario-real-atual
+Authorization: Bearer {{token}}
+
+### ========== FÉRIAS ==========
+
+
+### Listar todas as férias
+GET {{baseUrl}}/ferias
+Authorization: Bearer {{token}}
+
+### Buscar férias por ID
+GET {{baseUrl}}/ferias/{{feriasId}}
+Authorization: Bearer {{token}}
+
+### Listar férias do funcionário
+GET {{baseUrl}}/funcionarios/{{funcionarioId}}/ferias
+Authorization: Bearer {{token}}
+
+### Calcular saldo de férias
+GET {{baseUrl}}/ferias/{{feriasId}}/saldo
+Authorization: Bearer {{token}}
+
+### Marcar terço como pago
+PUT {{baseUrl}}/ferias/{{feriasId}}/terco-pago
+Authorization: Bearer {{token}}
+
+
+### ========== DESCANSOS ==========
+
+### Criar descanso
+POST {{baseUrl}}/descansos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "ferias_id": {{feriasId}},
+  "inicio": "2025-02-01T00:00:00Z",
+  "fim": "2025-02-10T00:00:00Z"
+}
+
+> {% client.global.set("descansoId", response.body.id) %}
+
+### Listar descansos
+GET {{baseUrl}}/descansos
+Authorization: Bearer {{token}}
+
+### Aprovar descanso (se tiver rota específica no controller)
+POST {{baseUrl}}/descansos/{{descansoId}}/aprovar
+Authorization: Bearer {{token}}

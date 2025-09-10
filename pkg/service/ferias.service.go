@@ -2,6 +2,7 @@ package service
 
 import (
 	"AutoGRH/pkg/entity"
+	"AutoGRH/pkg/repository"
 	"context"
 	"fmt"
 	"time"
@@ -46,6 +47,8 @@ func (s *FeriasService) CriarFerias(ctx context.Context, claims Claims, funciona
 
 	f := entity.NewFerias(funcionarioID, inicio, dias)
 	f.Valor = valor
+	f.Terco = valor / 3.0
+	f.TercoPago = false
 	f.Vencido = false
 
 	if err := s.repo.Create(ctx, f); err != nil {
@@ -168,9 +171,24 @@ func (s *FeriasService) MarcarTercoComoPago(ctx context.Context, claims Claims, 
 }
 
 // CalcularSaldo retorna os dias e valores restantes das férias
-func (s *FeriasService) CalcularSaldo(f *entity.Ferias, salario float64) (*SaldoFeriasDTO, error) {
+func (s *FeriasService) CalcularSaldo(ctx context.Context, claims Claims, f *entity.Ferias) (*SaldoFeriasDTO, error) {
+	//  Verifica permissão
+	if err := s.authService.Authorize(ctx, claims, "ferias:read"); err != nil {
+		return nil, err
+	}
+
+	//  Buscar salário real atual do funcionário
+	salarioReal, err := repository.GetSalarioRealAtual(f.FuncionarioID)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao buscar salário real atual: %w", err)
+	}
+	if salarioReal == nil {
+		return nil, fmt.Errorf("nenhum salário real encontrado para funcionarioID=%d", f.FuncionarioID)
+	}
+
+	//  Calcular saldo
 	diasRestantes := f.DiasRestantes()
-	valorDias := (salario / 30.0) * float64(diasRestantes)
+	valorDias := (salarioReal.Valor / 30.0) * float64(diasRestantes)
 	terco := f.Terco
 
 	var total float64

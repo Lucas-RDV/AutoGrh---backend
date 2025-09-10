@@ -234,22 +234,3 @@ func ListTodosFuncionarios() ([]*entity.Funcionario, error) {
 //
 // === NOVAS FUNÇÕES AUXILIARES PARA SALÁRIOS ===
 //
-
-// GetSalarioAtual retorna o salário registrado atual (fim IS NULL)
-func GetSalarioAtual(funcionarioID int64) (*entity.Salario, error) {
-	query := `SELECT salarioID, funcionarioID, inicio, fim, valor
-			  FROM salario WHERE funcionarioID = ? AND fim IS NULL LIMIT 1`
-
-	row := DB.QueryRow(query, funcionarioID)
-
-	var s entity.Salario
-	var fim sql.NullTime
-	if err := row.Scan(&s.ID, &s.FuncionarioID, &s.Inicio, &fim, &s.Valor); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("erro ao buscar salário atual: %w", err)
-	}
-	s.Fim = nullTimeToPtr.NullTimeToPtr(fim)
-	return &s, nil
-}

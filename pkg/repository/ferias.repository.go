@@ -164,10 +164,14 @@ func ListFerias() ([]*entity.Ferias, error) {
 
 	var lista []*entity.Ferias
 	for rows.Next() {
-		var f *entity.Ferias
+		f := &entity.Ferias{} // inicializa a struct
 		var inicioStr, vencimentoStr string
-		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencimentoStr,
-			&f.Vencido, &f.Valor, &f.Pago, &f.Terco, &f.TercoPago); err != nil {
+
+		if err := rows.Scan(
+			&f.ID, &f.FuncionarioID, &f.Dias,
+			&inicioStr, &vencimentoStr,
+			&f.Vencido, &f.Valor, &f.Pago, &f.Terco, &f.TercoPago,
+		); err != nil {
 			log.Printf("erro ao ler férias: %v", err)
 			continue
 		}
@@ -183,6 +187,7 @@ func ListFerias() ([]*entity.Ferias, error) {
 
 		lista = append(lista, f)
 	}
+
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("erro ao iterar férias: %w", err)
 	}

@@ -2,9 +2,9 @@ package service
 
 import (
 	"AutoGRH/pkg/entity"
+	"AutoGRH/pkg/repository"
 	"context"
 	"fmt"
-	"time"
 )
 
 // SalarioRealRepository define as operações necessárias para salários reais
@@ -33,38 +33,35 @@ func NewSalarioRealService(auth *AuthService, logRepo LogRepository, repo Salari
 
 // CriarSalarioReal encerra o salário atual (se houver) e insere um novo
 func (s *SalarioRealService) CriarSalarioReal(ctx context.Context, claims Claims, funcionarioID int64, valor float64) (*entity.SalarioReal, error) {
-	if err := s.authService.Authorize(ctx, claims, "salario_real:create"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, "salarioReal:create"); err != nil {
 		return nil, err
 	}
 
-	// Encerrar salário atual, se existir
-	atual, err := s.repo.GetAtual(funcionarioID)
+	atual, err := repository.GetSalarioRealAtual(funcionarioID)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao verificar salário atual: %w", err)
+		return nil, fmt.Errorf("erro ao verificar salário real atual: %w", err)
 	}
-	if atual != nil {
-		now := time.Now()
-		atual.Fim = &now
-		if err := s.repo.Update(atual); err != nil {
-			return nil, fmt.Errorf("erro ao encerrar salário atual: %w", err)
+	if atual != nil && atual.Fim == nil {
+		now := s.authService.clock()
+		if err := repository.EncerrarSalarioReal(atual.ID, now); err != nil {
+			return nil, fmt.Errorf("erro ao encerrar salário real atual: %w", err)
 		}
 	}
 
-	// Criar novo salário
+	now := s.authService.clock()
 	novo := &entity.SalarioReal{
 		FuncionarioID: funcionarioID,
-		Inicio:        time.Now(),
+		Inicio:        now,
 		Valor:         valor,
 	}
 	if err := s.repo.Create(novo); err != nil {
 		return nil, fmt.Errorf("erro ao criar salário real: %w", err)
 	}
 
-	// Log
 	_, _ = s.logRepo.Create(ctx, LogEntry{
-		EventoID:  3, // CRIAR
+		EventoID:  3,
 		UsuarioID: &claims.UserID,
-		Quando:    s.authService.clock(),
+		Quando:    now,
 		Detalhe:   fmt.Sprintf("Salário real criado funcionarioID=%d valor=%.2f", funcionarioID, valor),
 	})
 

@@ -17,6 +17,9 @@ func New(
 	documentoSvc *service.DocumentoService,
 	faltaSvc *service.FaltaService,
 	feriasSvc *service.FeriasService,
+	descansoSvc *service.DescansoService,
+	salarioSvc *service.SalarioService,
+	salarioRealSvc *service.SalarioRealService,
 ) http.Handler {
 	r := chi.NewRouter()
 
@@ -28,6 +31,9 @@ func New(
 	documentoCtl := controller.NewDocumentoController(documentoSvc)
 	faltaCtl := controller.NewFaltaController(faltaSvc)
 	feriasCtl := controller.NewFeriasController(feriasSvc)
+	descansoCtl := controller.NewDescansoController(descansoSvc)
+	salarioCtl := controller.NewSalarioController(salarioSvc)
+	salarioRealCtl := controller.NewSalarioRealController(salarioRealSvc)
 
 	// Rota pública
 	r.Post("/auth/login", authCtl.Login)
@@ -89,6 +95,10 @@ func New(
 
 		// Ferias dentro de funcionário
 		r.With(middleware.RequirePerm(auth, "ferias:list")).Get("/{id}/ferias", feriasCtl.GetFeriasByFuncionarioID)
+
+		// Descansos dentro de funcionário
+		r.With(middleware.RequirePerm(auth, "descanso:list")).Get("/funcionarios/{id}/descansos", descansoCtl.ListByFuncionario)
+
 	})
 
 	// Rotas diretas de Documentos
@@ -113,6 +123,33 @@ func New(
 		r.With(middleware.RequirePerm(auth, "ferias:update")).Put("/{id}/vencida", feriasCtl.MarcarComoVencidas)
 		r.With(middleware.RequirePerm(auth, "ferias:update")).Put("/{id}/terco-pago", feriasCtl.MarcarTercoComoPago)
 		r.With(middleware.RequirePerm(auth, "ferias:read")).Get("/{id}/saldo", feriasCtl.GetSaldoFerias)
+
+		// Descansos dentro de férias
+		r.With(middleware.RequirePerm(auth, "descanso:list")).Get("/ferias/{id}/descansos", descansoCtl.ListByFerias)
 	})
+
+	// Rotas diretas de Descansos
+	r.Route("/descansos", func(r chi.Router) {
+		r.With(middleware.RequirePerm(auth, "descanso:create")).Post("/", descansoCtl.Create)
+		r.With(middleware.RequirePerm(auth, "descanso:update")).Put("/{id}/aprovar", descansoCtl.Aprovar)
+		r.With(middleware.RequirePerm(auth, "descanso:update")).Put("/{id}/pagar", descansoCtl.Pagar)
+		r.With(middleware.RequirePerm(auth, "descanso:delete")).Delete("/{id}", descansoCtl.Delete)
+
+		r.With(middleware.RequirePerm(auth, "descanso:list")).Get("/aprovados", descansoCtl.ListAprovados)
+		r.With(middleware.RequirePerm(auth, "descanso:list")).Get("/pendentes", descansoCtl.ListPendentes)
+	})
+
+	// Salários (por funcionário e individuais)
+	r.With(middleware.RequirePerm(auth, "salario:create")).Post("/funcionarios/{id}/salarios", salarioCtl.Create)
+	r.With(middleware.RequirePerm(auth, "salario:list")).Get("/funcionarios/{id}/salarios", salarioCtl.ListByFuncionario)
+	r.With(middleware.RequirePerm(auth, "salario:update")).Put("/salarios/{id}", salarioCtl.Update)
+	r.With(middleware.RequirePerm(auth, "salario:delete")).Delete("/salarios/{id}", salarioCtl.Delete)
+
+	// Salários reais (histórico e atual)
+	r.With(middleware.RequirePerm(auth, "salarioReal:create")).Post("/funcionarios/{id}/salarios-reais", salarioRealCtl.Create)
+	r.With(middleware.RequirePerm(auth, "salarioReal:list")).Get("/funcionarios/{id}/salarios-reais", salarioRealCtl.ListByFuncionario)
+	r.With(middleware.RequirePerm(auth, "salarioReal:list")).Get("/funcionarios/{id}/salario-real-atual", salarioRealCtl.GetAtual)
+	r.With(middleware.RequirePerm(auth, "salarioReal:delete")).Delete("/salarios-reais/{id}", salarioRealCtl.Delete)
+
 	return r
 }

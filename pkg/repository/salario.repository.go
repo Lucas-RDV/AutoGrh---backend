@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 )
 
 // CreateSalario cria um salário para um funcionário
@@ -91,4 +92,52 @@ func DeleteSalario(id int64) error {
 		return fmt.Errorf("erro ao deletar salário: %w", err)
 	}
 	return nil
+}
+
+func GetSalarioAtual(funcionarioID int64) (*entity.Salario, error) {
+	const q = `
+		SELECT salarioID, funcionarioID, inicio, fim, valor
+		FROM salario
+		WHERE funcionarioID = ?
+		  AND fim IS NULL
+		ORDER BY inicio DESC
+		LIMIT 1
+	`
+	row := DB.QueryRow(q, funcionarioID)
+
+	var s entity.Salario
+	var inicioS, fimS sql.NullString
+
+	if err := row.Scan(&s.ID, &s.FuncionarioID, &inicioS, &fimS, &s.Valor); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("erro ao buscar salário atual: %w", err)
+	}
+	if !inicioS.Valid || inicioS.String == "" {
+		return nil, fmt.Errorf("salário atual sem 'inicio'")
+	}
+
+	tInicio, err := dateStringToTime.DateStringToTime(inicioS.String)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao converter 'inicio': %w", err)
+	}
+	s.Inicio = tInicio
+
+	if fimS.Valid && fimS.String != "" {
+		tFim, err := dateStringToTime.DateStringToTime(fimS.String)
+		if err != nil {
+			return nil, fmt.Errorf("erro ao converter 'fim': %w", err)
+		}
+		s.Fim = &tFim
+	} else {
+		s.Fim = nil
+	}
+	return &s, nil
+}
+
+func EncerrarSalario(id int64, fim time.Time) error {
+	nt := ptrToNullTime.PtrToNullTime(&fim)
+	_, err := DB.Exec(`UPDATE salario SET fim=? WHERE salarioID=?`, nt, id)
+	return err
 }

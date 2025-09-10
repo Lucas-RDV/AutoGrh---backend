@@ -2,6 +2,7 @@ package service
 
 import (
 	"AutoGRH/pkg/entity"
+	"AutoGRH/pkg/repository"
 	"context"
 	"fmt"
 	"time"
@@ -44,15 +45,60 @@ func (s *DescansoService) CreateDescanso(ctx context.Context, claims Claims, d *
 		return fmt.Errorf("data inicial não pode ser depois da final")
 	}
 
+	// 1) Buscar férias associada
+	ferias, err := repository.GetFeriasByID(d.FeriasID)
+	if err != nil {
+		return fmt.Errorf("erro ao buscar férias vinculadas: %w", err)
+	}
+	if ferias == nil {
+		return fmt.Errorf("férias não encontradas para ID=%d", d.FeriasID)
+	}
+
+	// 2) Validar se há dias suficientes
+	if ferias.DiasRestantes() < d.DuracaoEmDias() {
+		return fmt.Errorf("não há dias de férias suficientes para este descanso")
+	}
+
+	// 3) Calcular valor do descanso (proporcional + terço)
+	diasDescanso := d.DuracaoEmDias()
+	if diasDescanso <= 0 {
+		return fmt.Errorf("duração do descanso inválida")
+	}
+	if ferias.Dias <= 0 {
+		return fmt.Errorf("férias com dias inválidos (Dias=%d)", ferias.Dias)
+	}
+
+	valorBasePorDia := ferias.Valor / float64(ferias.Dias)
+
+	var tercoPorDia float64
+	if ferias.Terco > 0 {
+		// usa o terço já salvo nas férias
+		tercoPorDia = ferias.Terco / float64(ferias.Dias)
+	} else {
+		// fallback: calcula 1/3 do valor base
+		tercoPorDia = valorBasePorDia / 3.0
+	}
+
+	d.Valor = (valorBasePorDia + tercoPorDia) * float64(diasDescanso)
+
+	// 4) Estados iniciais
+	d.Aprovado = false
+	d.Pago = false
+
+	// 5) Persistir
 	if err := s.repo.Create(d); err != nil {
 		return fmt.Errorf("erro ao criar descanso: %w", err)
 	}
 
+	// 6) Log
 	_, _ = s.logRepo.Create(ctx, LogEntry{
 		EventoID:  3, // CRIAR
 		UsuarioID: &claims.UserID,
 		Quando:    time.Now(),
-		Detalhe:   fmt.Sprintf("Descanso criado ID=%d FeriasID=%d", d.ID, d.FeriasID),
+		Detalhe: fmt.Sprintf(
+			"Descanso criado ID=%d FeriasID=%d Dias=%d Valor=%.2f",
+			d.ID, d.FeriasID, diasDescanso, d.Valor,
+		),
 	})
 
 	return nil
@@ -70,6 +116,9 @@ func (s *DescansoService) AprovarDescanso(ctx context.Context, claims Claims, id
 	}
 	if descanso == nil {
 		return fmt.Errorf("descanso não encontrado")
+	}
+	if descanso.Aprovado {
+		return fmt.Errorf("descanso já está aprovado")
 	}
 
 	descanso.Aprovado = true
@@ -99,6 +148,9 @@ func (s *DescansoService) MarcarComoPago(ctx context.Context, claims Claims, id 
 	}
 	if descanso == nil {
 		return fmt.Errorf("descanso não encontrado")
+	}
+	if descanso.Pago {
+		return fmt.Errorf("descanso já está pago")
 	}
 
 	descanso.Pago = true

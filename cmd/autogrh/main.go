@@ -25,7 +25,14 @@ func main() {
 	documentoSvc := Bootstrap.BuildDocumentoService(auth)
 	faltaSvc := Bootstrap.BuildFaltaService(auth)
 	feriasSvc := Bootstrap.BuildFeriasService(auth)
-	routes := router.New(auth, pessoaSvc, funcSvc, documentoSvc, faltaSvc, feriasSvc)
+	descansoSvc := Bootstrap.BuildDescansoService(auth)
+	salarioSvc := Bootstrap.BuildSalarioService(auth)
+	salarioRealSvc := Bootstrap.BuildSalarioRealService(auth)
+
+	// Inicializar workers
+	Bootstrap.InitWorkers(feriasSvc, descansoSvc, salarioRealSvc, funcSvc, faltaSvc)
+
+	routes := router.New(auth, pessoaSvc, funcSvc, documentoSvc, faltaSvc, feriasSvc, descansoSvc, salarioSvc, salarioRealSvc)
 
 	cors := middleware.NewCORS(middleware.CORSConfig{
 
