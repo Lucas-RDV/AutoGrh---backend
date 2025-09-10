@@ -3,7 +3,7 @@
 @token = {{token}}
 @pessoaId = {{pessoaId}}
 @funcionarioId = {{funcionarioId}}
-@feriasId = {{feriasId}}
+@feriasId = 1
 @descansoId = {{descansoId}}
 @salarioId = {{salarioId}}
 @salarioRealId = {{salarioRealId}}
@@ -132,10 +132,15 @@ Content-Type: application/json
 
 > {% client.global.set("descansoId", response.body.id) %}
 
-### Listar descansos
-GET {{baseUrl}}/descansos
+### Listar descansos aprovados
+GET {{baseUrl}}/descansos/aprovados
 Authorization: Bearer {{token}}
 
-### Aprovar descanso (se tiver rota específica no controller)
-POST {{baseUrl}}/descansos/{{descansoId}}/aprovar
+### Listar descansos pendentes
+GET {{baseUrl}}/descansos/pendentes
+Authorization: Bearer {{token}}
+
+
+### Aprovar descanso
+PUT {{baseUrl}}/descansos/{{descansoId}}/aprovar
 Authorization: Bearer {{token}}

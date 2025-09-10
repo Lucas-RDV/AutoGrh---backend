@@ -174,9 +174,27 @@ func GetDescansosAprovados() ([]*entity.Descanso, error) {
 	var lista []*entity.Descanso
 	for rows.Next() {
 		var d entity.Descanso
-		if err := rows.Scan(&d.ID, &d.FeriasID, &d.Inicio, &d.Fim, &d.Valor, &d.Aprovado, &d.Pago); err != nil {
+		var inicioStr, fimStr string
+
+		if err := rows.Scan(
+			&d.ID,
+			&d.FeriasID,
+			&inicioStr,
+			&fimStr,
+			&d.Valor,
+			&d.Aprovado,
+			&d.Pago,
+		); err != nil {
 			return nil, fmt.Errorf("erro ao ler descanso aprovado: %w", err)
 		}
+
+		if d.Inicio, err = dateStringToTime.DateStringToTime(inicioStr); err != nil {
+			return nil, fmt.Errorf("erro ao converter inicio: %w", err)
+		}
+		if d.Fim, err = dateStringToTime.DateStringToTime(fimStr); err != nil {
+			return nil, fmt.Errorf("erro ao converter fim: %w", err)
+		}
+
 		lista = append(lista, &d)
 	}
 	if err := rows.Err(); err != nil {
@@ -186,7 +204,6 @@ func GetDescansosAprovados() ([]*entity.Descanso, error) {
 	return lista, nil
 }
 
-// GetDescansosPendentes retorna todos os descansos ainda não aprovados de um período de férias
 func GetDescansosPendentes() ([]*entity.Descanso, error) {
 	query := `SELECT descansoID, feriasID, inicio, fim, valor, aprovado, pago
 			  FROM descanso WHERE aprovado = 0`
@@ -200,9 +217,27 @@ func GetDescansosPendentes() ([]*entity.Descanso, error) {
 	var lista []*entity.Descanso
 	for rows.Next() {
 		var d entity.Descanso
-		if err := rows.Scan(&d.ID, &d.FeriasID, &d.Inicio, &d.Fim, &d.Valor, &d.Aprovado, &d.Pago); err != nil {
+		var inicioStr, fimStr string
+
+		if err := rows.Scan(
+			&d.ID,
+			&d.FeriasID,
+			&inicioStr,
+			&fimStr,
+			&d.Valor,
+			&d.Aprovado,
+			&d.Pago,
+		); err != nil {
 			return nil, fmt.Errorf("erro ao ler descanso pendente: %w", err)
 		}
+
+		if d.Inicio, err = dateStringToTime.DateStringToTime(inicioStr); err != nil {
+			return nil, fmt.Errorf("erro ao converter inicio: %w", err)
+		}
+		if d.Fim, err = dateStringToTime.DateStringToTime(fimStr); err != nil {
+			return nil, fmt.Errorf("erro ao converter fim: %w", err)
+		}
+
 		lista = append(lista, &d)
 	}
 	if err := rows.Err(); err != nil {

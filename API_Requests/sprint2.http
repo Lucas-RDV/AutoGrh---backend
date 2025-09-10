@@ -166,7 +166,7 @@ Content-Type: application/json
 
 {
   "login": "usuario1",
-  "senha": "novasenha123"
+  "senha": "novaSenha123"
 }
 
 ### Atualizar pessoa
