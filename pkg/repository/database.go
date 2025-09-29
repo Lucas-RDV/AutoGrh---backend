@@ -102,37 +102,41 @@ func createTables() {
 			FOREIGN KEY (pessoaID) REFERENCES pessoa(pessoaID)
 		);`,
 
-		`CREATE TABLE IF NOT EXISTS tipo_pagamento (
-			tipoID BIGINT AUTO_INCREMENT PRIMARY KEY,
-			tipo VARCHAR(20) UNIQUE
-		);`,
-
 		`CREATE TABLE IF NOT EXISTS vale (
-			valeID BIGINT AUTO_INCREMENT PRIMARY KEY,
-			funcionarioID BIGINT,
-			valor FLOAT,
-			data DATE,
-			aprovado BOOLEAN,
-			pago BOOLEAN,
-			FOREIGN KEY (funcionarioID) REFERENCES funcionario(funcionarioID)
-		);`,
+		valeID BIGINT AUTO_INCREMENT PRIMARY KEY,
+		funcionarioID BIGINT NOT NULL,
+		valor DECIMAL(10,2) NOT NULL,
+		data DATE NOT NULL,
+		aprovado BOOLEAN NOT NULL DEFAULT FALSE,
+		pago BOOLEAN NOT NULL DEFAULT FALSE,
+		ativo BOOLEAN NOT NULL DEFAULT TRUE,
+		FOREIGN KEY (funcionarioID) REFERENCES funcionario(funcionarioID)
+	);`,
 
 		`CREATE TABLE IF NOT EXISTS folha_pagamento (
-			folhaID BIGINT AUTO_INCREMENT PRIMARY KEY,
-			data DATE
-		);`,
+    folhaID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    mes INT NOT NULL,
+    ano INT NOT NULL,
+    tipo ENUM('SALARIO', 'VALE') NOT NULL,
+    dataGeracao DATETIME NOT NULL,
+    valorTotal DECIMAL(10,2) NOT NULL DEFAULT 0,
+    pago BOOLEAN NOT NULL DEFAULT FALSE
+);`,
 
 		`CREATE TABLE IF NOT EXISTS pagamento (
-			pagamentoID BIGINT AUTO_INCREMENT PRIMARY KEY,
-			funcionarioID BIGINT,
-			folhaID BIGINT,
-			tipoID BIGINT,
-			valor FLOAT,
-			data DATE,
-			FOREIGN KEY (funcionarioID) REFERENCES funcionario(funcionarioID),
-			FOREIGN KEY (folhaID) REFERENCES folha_pagamento(folhaID),
-			FOREIGN KEY (tipoID) REFERENCES tipo_pagamento(tipoID)
-		);`,
+    pagamentoID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    funcionarioID BIGINT NOT NULL,
+    folhaID BIGINT NOT NULL,
+    salarioBase DECIMAL(10,2) NOT NULL,
+    adicional DECIMAL(10,2) NOT NULL DEFAULT 0,
+    descontoINSS DECIMAL(10,2) NOT NULL DEFAULT 0,
+    salarioFamilia DECIMAL(10,2) NOT NULL DEFAULT 0,
+    valorFinal DECIMAL(10,2) NOT NULL,
+    pago BOOLEAN NOT NULL DEFAULT FALSE,
+    descontoVales DECIMAL(10,2) NOT NULL DEFAULT 0,
+    FOREIGN KEY (funcionarioID) REFERENCES funcionario(funcionarioID),
+    FOREIGN KEY (folhaID) REFERENCES folha_pagamento(folhaID)
+);`,
 
 		`CREATE TABLE IF NOT EXISTS salario (
 			salarioID BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -211,17 +215,6 @@ func createTables() {
 }
 
 func seedDefaultData() {
-	tipos := []string{"salario", "vale", "outros"}
-	for _, tipo := range tipos {
-		insert := `
-			INSERT INTO tipo_pagamento (tipo)
-			SELECT * FROM (SELECT ?) AS tmp
-			WHERE NOT EXISTS (
-				SELECT tipo FROM tipo_pagamento WHERE tipo = ?
-			) LIMIT 1;
-		`
-		mustExec(DB, insert, tipo, tipo)
-	}
 
 	eventos := []string{"LOGIN", "LOGOUT", "CRIAR", "ATUALIZAR", "DELETAR", "APROVAR", "NEGAR"}
 	for _, evento := range eventos {

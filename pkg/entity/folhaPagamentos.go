@@ -2,20 +2,25 @@ package entity
 
 import "time"
 
-// FolhaPagamentos representa uma folha de pagamento mensal contendo vários pagamentos
-// Armazena a data da folha, valor total e os pagamentos associados
-
+// FolhaPagamentos representa uma folha mensal de pagamento ou de vale
 type FolhaPagamentos struct {
-	ID         int64       `json:"id"`
-	Data       time.Time   `json:"data"`
-	Valor      float64     `json:"valor"`
-	Pagamentos []Pagamento `json:"pagamentos,omitempty"`
+	ID          int64     `json:"id"`
+	Mes         int       `json:"mes"`         // mês de referência (1-12)
+	Ano         int       `json:"ano"`         // ano de referência
+	Tipo        string    `json:"tipo"`        // "SALARIO" ou "VALE"
+	DataGeracao time.Time `json:"dataGeracao"` // quando a folha foi criada
+	ValorTotal  float64   `json:"valorTotal"`  // somatório dos pagamentos da folha
+	Pago        bool      `json:"pago"`        // indica se a folha foi fechada/paga
 }
 
-// NewFolhaPagamentos cria uma nova folha de pagamento com valor inicial zerado
-func NewFolhaPagamentos(data time.Time) *FolhaPagamentos {
+// NewFolhaPagamentos cria uma nova folha com valor inicial zerado.
+func NewFolhaPagamentos(mes int, ano int, tipo string) *FolhaPagamentos {
 	return &FolhaPagamentos{
-		Data:  data,
-		Valor: 0,
+		Mes:         mes,
+		Ano:         ano,
+		Tipo:        tipo,
+		DataGeracao: time.Now(),
+		ValorTotal:  0,
+		Pago:        false,
 	}
 }

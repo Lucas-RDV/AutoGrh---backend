@@ -128,7 +128,7 @@ func carregarRelacionamentos(f *entity.Funcionario) error {
 		return fmt.Errorf("erro ao carregar faltas: %w", err)
 	}
 
-	if pagamentos, err := GetPagamentosByFuncionarioID(f.ID); err == nil {
+	if pagamentos, err := ListPagamentosByFuncionarioID(f.ID); err == nil {
 		f.Pagamentos = pagamentos
 	} else {
 		return fmt.Errorf("erro ao carregar pagamentos: %w", err)

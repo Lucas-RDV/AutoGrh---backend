@@ -122,3 +122,22 @@ func ListAllFaltas() ([]*entity.Falta, error) {
 	}
 	return lista, nil
 }
+
+// GetTotalFaltasByFuncionarioMesAno retorna o total de faltas de um funcionário em um mês/ano específico
+func GetTotalFaltasByFuncionarioMesAno(funcionarioID int64, mes int, ano int) (int, error) {
+	query := `SELECT COUNT(*) 
+			  FROM falta 
+			  WHERE funcionarioID = ? 
+			    AND MONTH(data) = ? 
+			    AND YEAR(data) = ?`
+
+	row := DB.QueryRow(query, funcionarioID, mes, ano)
+
+	var total int
+	if err := row.Scan(&total); err != nil {
+		return 0, fmt.Errorf("erro ao contar faltas do funcionário %d em %02d/%d: %w",
+			funcionarioID, mes, ano, err)
+	}
+
+	return total, nil
+}

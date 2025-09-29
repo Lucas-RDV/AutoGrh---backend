@@ -20,6 +20,10 @@ func New(
 	descansoSvc *service.DescansoService,
 	salarioSvc *service.SalarioService,
 	salarioRealSvc *service.SalarioRealService,
+	valeSvc *service.ValeService,
+	folhaSvc *service.FolhaPagamentoService,
+	pagamentoSvc *service.PagamentoService,
+
 ) http.Handler {
 	r := chi.NewRouter()
 
@@ -34,6 +38,9 @@ func New(
 	descansoCtl := controller.NewDescansoController(descansoSvc)
 	salarioCtl := controller.NewSalarioController(salarioSvc)
 	salarioRealCtl := controller.NewSalarioRealController(salarioRealSvc)
+	valeCtl := controller.NewValeController(valeSvc)
+	folhaCtl := controller.NewFolhaPagamentoController(folhaSvc)
+	pagamentoCtl := controller.NewPagamentoController(pagamentoSvc)
 
 	// Rota pública
 	r.Post("/auth/login", authCtl.Login)
@@ -150,6 +157,43 @@ func New(
 	r.With(middleware.RequirePerm(auth, "salarioReal:list")).Get("/funcionarios/{id}/salarios-reais", salarioRealCtl.ListByFuncionario)
 	r.With(middleware.RequirePerm(auth, "salarioReal:list")).Get("/funcionarios/{id}/salario-real-atual", salarioRealCtl.GetAtual)
 	r.With(middleware.RequirePerm(auth, "salarioReal:delete")).Delete("/salarios-reais/{id}", salarioRealCtl.Delete)
+
+	// Rotas diretas de Vales
+	r.Route("/vales", func(r chi.Router) {
+		r.With(middleware.RequirePerm(auth, "vale:create")).Post("/", valeCtl.CriarVale)
+		r.With(middleware.RequirePerm(auth, "vale:update")).Put("/{id}", valeCtl.AtualizarVale)
+		r.With(middleware.RequirePerm(auth, "vale:delete")).Delete("/{id}", valeCtl.DeleteVale)
+		r.With(middleware.RequirePerm(auth, "vale:list")).Get("/", valeCtl.ListarVales)
+		r.With(middleware.RequirePerm(auth, "vale:read")).Get("/{id}", valeCtl.GetVale)
+		r.With(middleware.RequirePerm(auth, "vale:update")).Put("/{id}/aprovar", valeCtl.AprovarVale)
+		r.With(middleware.RequirePerm(auth, "vale:update")).Put("/{id}/pagar", valeCtl.MarcarValeComoPago)
+		r.With(middleware.RequirePerm(auth, "vale:list")).Get("/pendentes", valeCtl.ListarValesPendentes)
+		r.With(middleware.RequirePerm(auth, "vale:list")).Get("/aprovados-nao-pagos", valeCtl.ListarValesAprovadosNaoPagos)
+	})
+
+	// Folha de Pagamentos
+	r.Route("/folhas", func(r chi.Router) {
+		r.With(middleware.RequirePerm(auth, "folha:list")).Get("/", folhaCtl.ListarFolhas)
+		r.With(middleware.RequirePerm(auth, "folha:read")).Get("/{id}", folhaCtl.BuscarFolha)
+		r.With(middleware.RequirePerm(auth, "folha:read")).Get("/{mes}/{ano}/{tipo}", folhaCtl.BuscarFolhaPorMesAnoTipo)
+		r.With(middleware.RequirePerm(auth, "folha:create")).Post("/vale", folhaCtl.CriarFolhaVale)
+		r.With(middleware.RequirePerm(auth, "folha:update")).Put("/{id}/recalcular", folhaCtl.RecalcularFolha)
+		r.With(middleware.RequirePerm(auth, "folha:update")).Put("/{id}/recalcular-vale", folhaCtl.RecalcularFolhaVale)
+		r.With(middleware.RequirePerm(auth, "folha:update")).Put("/{id}/fechar", folhaCtl.FecharFolha)
+		r.With(middleware.RequirePerm(auth, "folha:delete")).Delete("/{id}", folhaCtl.ExcluirFolha)
+	})
+
+	// Pagamentos
+	r.Route("/pagamentos", func(r chi.Router) {
+		r.With(middleware.RequirePerm(auth, "pagamento:read")).Get("/{id}", pagamentoCtl.GetPagamentoByID)
+		r.With(middleware.RequirePerm(auth, "pagamento:update")).Put("/{id}", pagamentoCtl.UpdatePagamento)
+		r.With(middleware.RequirePerm(auth, "pagamento:update")).Put("/{id}/pagar", pagamentoCtl.MarcarComoPago)
+	})
+
+	// Pagamentos por funcionário
+	r.Route("/funcionarios/{id}/pagamentos", func(r chi.Router) {
+		r.With(middleware.RequirePerm(auth, "pagamento:list")).Get("/", pagamentoCtl.ListarPagamentosFuncionario)
+	})
 
 	return r
 }

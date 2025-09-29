@@ -1,0 +1,163 @@
+@baseUrl = http://localhost:8080
+@mes = 9
+@ano = 2025
+
+### 1 - Login como Admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "login": "admin",
+  "senha": "adm123"
+}
+
+> {% client.global.set("token", response.body.token) %}
+
+### 2 - Cadastrar nova pessoa
+POST {{baseUrl}}/pessoas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "João Silva",
+  "cpf": "12345678900",
+  "rg": "11223344",
+  "endereco": "Rua das Flores, 123",
+  "contato": "99999-0000",
+  "contatoEmergencia": "88888-1111"
+}
+
+> {% client.global.set("pessoaId", response.body.id) %}
+
+### 3 - Cadastrar novo funcionário
+POST {{baseUrl}}/funcionarios
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "pessoaID": {{pessoaId}},
+  "pis": "12345678901",
+  "ctpf": "1234567",
+  "nascimento": "2000-01-01",
+  "admissao": "2025-01-01",
+  "cargo": "Analista",
+  "salarioInicial": 3000.0,
+  "feriasDisponiveis": 30
+}
+
+> {% client.global.set("funcionarioId", response.body.id) %}
+
+### 3.1 - Criar SALÁRIO (fix: rota aninhada por funcionário)
+POST {{baseUrl}}/funcionarios/{{funcionarioId}}/salarios
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "valor": 3000.0
+}
+
+> {% client.global.set("salarioId", response.body.id) %}
+
+### 3.2 - Criar SALÁRIO REAL (fix: rota aninhada por funcionário)
+POST {{baseUrl}}/funcionarios/{{funcionarioId}}/salarios-reais
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "valor": 3200.0
+}
+
+> {% client.global.set("salarioRealId", response.body.id) %}
+
+### 4 - Obter folha de SALÁRIO do mês/ano e recalcular
+# Busca a folha de salário criada automaticamente para {{mes}}/{{ano}}
+GET {{baseUrl}}/folhas/{{mes}}/{{ano}}/SALARIO
+Authorization: Bearer {{token}}
+
+> {% client.global.set("folhaSalarioId", response.body.id) %}
+
+###4.5 Recalcular para incluir o funcionário
+PUT {{baseUrl}}/folhas/{{folhaSalarioId}}/recalcular
+Authorization: Bearer {{token}}
+
+### 5 - Listar pagamentos do FUNCIONÁRIO (para pegar o pagamento da folha)
+GET {{baseUrl}}/funcionarios/{{funcionarioId}}/pagamentos
+Authorization: Bearer {{token}}
+
+> {% client.global.set("pagamentoId", response.body[0].id) %}
+
+### 6 - Adicionar FALTAS ao funcionário
+POST {{baseUrl}}/funcionarios/{{funcionarioId}}/faltas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "funcionario_id": 1,
+  "quantidade": 5,
+  "mes": "2025-09-07T00:00:00Z"
+}
+
+### 7 - Adicionar adicionais e salário família ao pagamento
+PUT {{baseUrl}}/pagamentos/{{pagamentoId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "adicional": 500.0,
+  "inss": 200.0,
+  "familia": 150.0
+}
+
+
+### 8 - Recalcular folha novamente (SALÁRIO)
+PUT {{baseUrl}}/folhas/{{folhaSalarioId}}/recalcular
+Authorization: Bearer {{token}}
+
+### 9 - Exibir pagamentos do FUNCIONÁRIO (após recálculo)
+GET {{baseUrl}}/funcionarios/{{funcionarioId}}/pagamentos
+Authorization: Bearer {{token}}
+
+### 10 - Criar VALE para o funcionário
+POST {{baseUrl}}/vales
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "funcionarioID": {{funcionarioId}},
+  "valor": 300.0,
+  "data": "2025-09-15"
+}
+
+> {% client.global.set("valeId", response.body.id) %}
+
+### 10.1 - Aprovar VALE (para entrar na folha)
+PUT {{baseUrl}}/vales/{{valeId}}/aprovar
+Authorization: Bearer {{token}}
+
+### 11 - Criar FOLHA de VALE (manual)
+POST {{baseUrl}}/folhas/vale
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "mes": {{mes}},
+  "ano": {{ano}}
+}
+
+> {% client.global.set("folhaValeId", response.body.id) %}
+
+### 12 - Exibir FOLHA de VALE
+GET {{baseUrl}}/folhas/{{folhaValeId}}
+Authorization: Bearer {{token}}
+
+### 13 - Marcar FOLHA de VALE como paga
+PUT {{baseUrl}}/folhas/{{folhaValeId}}/fechar
+Authorization: Bearer {{token}}
+
+### 14 - Recalcular FOLHA de SALÁRIO para descontar o VALE pago
+PUT {{baseUrl}}/folhas/{{folhaSalarioId}}/recalcular
+Authorization: Bearer {{token}}
+
+### 15 - Exibir FOLHA de SALÁRIO (via pagamentos do funcionário)
+GET {{baseUrl}}/funcionarios/{{funcionarioId}}/pagamentos
+Authorization: Bearer {{token}}

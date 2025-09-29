@@ -1,6 +1,7 @@
 package Bootstrap
 
 import (
+	"AutoGRH/pkg/controller"
 	"AutoGRH/pkg/worker"
 	"context"
 	"os"
@@ -145,6 +146,7 @@ func InitWorkers(
 	salarioRealSvc *service.SalarioRealService,
 	funcionarioSvc *service.FuncionarioService,
 	faltaSvc *service.FaltaService,
+	folhaSvc *service.FolhaPagamentoService,
 ) {
 	feriasWorker := worker.NewFeriasWorker(
 		feriasSvc,
@@ -153,6 +155,9 @@ func InitWorkers(
 		funcionarioSvc,
 		faltaSvc,
 	)
+
+	folhaWorker := worker.NewFolhaWorker(folhaSvc)
+	folhaWorker.Start()
 	feriasWorker.Start()
 }
 
@@ -309,4 +314,73 @@ func BuildSalarioRealService(auth *service.AuthService) *service.SalarioRealServ
 	)
 
 	return service.NewSalarioRealService(auth, logRepo, repo)
+}
+
+// BuildValeService constrói o ValeService com o adapter apropriado
+func BuildValeService(auth *service.AuthService) *service.ValeService {
+	createLog := func(ctx context.Context, l *entity.Log) (int64, error) {
+		return 0, repository.CreateLog(l)
+	}
+	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
+
+	valeRepo := Adapter.NewValeRepositoryAdapter(
+		repository.CreateVale,
+		repository.GetValeByID,
+		repository.GetValesByFuncionarioID,
+		repository.UpdateVale,
+		repository.SoftDeleteVale,
+		repository.DeleteVale,
+		repository.ListValesPendentes,
+		repository.ListValesAprovadosNaoPagos,
+	)
+	return service.NewValeService(valeRepo, auth, logRepo)
+}
+
+// BuildValeController constrói o ValeController
+func BuildValeController(auth *service.AuthService) *controller.ValeController {
+	valeSvc := BuildValeService(auth)
+	return controller.NewValeController(valeSvc)
+}
+
+// BuildFolhaPagamentoService constrói o FolhaPagamentoService
+func BuildFolhaPagamentoService(auth *service.AuthService) *service.FolhaPagamentoService {
+	createLog := func(ctx context.Context, l *entity.Log) (int64, error) {
+		return 0, repository.CreateLog(l)
+	}
+	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
+
+	folhaRepo := Adapter.NewFolhaPagamentoRepositoryAdapter(
+		repository.CreateFolhaPagamento,
+		repository.GetFolhaPagamentoByID,
+		repository.GetFolhaByMesAnoTipo,
+		repository.UpdateFolhaPagamento,
+		repository.DeleteFolhaPagamento,
+		repository.ListFolhasPagamentos,
+		repository.MarcarFolhaComoPaga,
+	)
+	return service.NewFolhaPagamentoService(folhaRepo, auth, logRepo)
+}
+
+// BuildPagamentoService constrói o PagamentoService com o adapter apropriado
+func BuildPagamentoService(auth *service.AuthService) *service.PagamentoService {
+	createLog := func(ctx context.Context, l *entity.Log) (int64, error) {
+		return 0, repository.CreateLog(l)
+	}
+	logRepo := Adapter.NewLogRepositoryAdapter(createLog)
+
+	pagamentoRepo := Adapter.NewPagamentoRepositoryAdapter(
+		repository.CreatePagamento,
+		repository.UpdatePagamento,
+		repository.GetPagamentosByFolhaID,
+		repository.DeletePagamentosByFolhaID,
+		repository.GetPagamentoByID,
+		repository.ListPagamentosByFuncionarioID,
+	)
+	return service.NewPagamentoService(pagamentoRepo, auth, logRepo)
+}
+
+// BuildPagamentoController constrói o PagamentoController
+func BuildPagamentoController(auth *service.AuthService) *controller.PagamentoController {
+	pagamentoSvc := BuildPagamentoService(auth)
+	return controller.NewPagamentoController(pagamentoSvc)
 }

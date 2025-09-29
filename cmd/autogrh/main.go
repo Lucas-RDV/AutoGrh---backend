@@ -28,11 +28,14 @@ func main() {
 	descansoSvc := Bootstrap.BuildDescansoService(auth)
 	salarioSvc := Bootstrap.BuildSalarioService(auth)
 	salarioRealSvc := Bootstrap.BuildSalarioRealService(auth)
+	valeCtl := Bootstrap.BuildValeService(auth)
+	folhaCtl := Bootstrap.BuildFolhaPagamentoService(auth)
+	pagamentoCtl := Bootstrap.BuildPagamentoService(auth)
 
 	// Inicializar workers
-	Bootstrap.InitWorkers(feriasSvc, descansoSvc, salarioRealSvc, funcSvc, faltaSvc)
+	Bootstrap.InitWorkers(feriasSvc, descansoSvc, salarioRealSvc, funcSvc, faltaSvc, folhaCtl)
 
-	routes := router.New(auth, pessoaSvc, funcSvc, documentoSvc, faltaSvc, feriasSvc, descansoSvc, salarioSvc, salarioRealSvc)
+	routes := router.New(auth, pessoaSvc, funcSvc, documentoSvc, faltaSvc, feriasSvc, descansoSvc, salarioSvc, salarioRealSvc, valeCtl, folhaCtl, pagamentoCtl)
 
 	cors := middleware.NewCORS(middleware.CORSConfig{
 
