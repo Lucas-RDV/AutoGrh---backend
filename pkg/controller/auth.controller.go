@@ -43,6 +43,32 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 		httpjson.Unauthorized(w, "INVALID_CREDENTIALS", "credenciais inválidas")
 		return
 	}
-	resp := loginResponse{Token: tok, ExpiresAt: exp, Usuario: user}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "auth",
+		Value:    tok,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		// Em produção (HTTPS) use Secure:true
+		Secure:  false,
+		Expires: exp,
+	})
+	// corpo sem expor o token (front não precisa mais dele)
+	resp := loginResponse{ExpiresAt: exp, Usuario: user}
 	httpjson.WriteJSON(w, http.StatusOK, resp)
+}
+
+// POST /auth/logout — apaga o cookie httpOnly
+func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "auth",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   false,
+		Expires:  time.Unix(0, 0),
+		MaxAge:   -1,
+	})
+	httpjson.WriteJSON(w, http.StatusOK, map[string]any{"ok": true})
 }

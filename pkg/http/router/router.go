@@ -44,6 +44,7 @@ func New(
 
 	// Rota pública
 	r.Post("/auth/login", authCtl.Login)
+	r.Post("/auth/logout", authCtl.Logout)
 
 	// Rota autenticada básica
 	r.Group(func(r chi.Router) {

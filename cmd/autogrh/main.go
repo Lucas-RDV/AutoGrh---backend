@@ -39,10 +39,10 @@ func main() {
 
 	cors := middleware.NewCORS(middleware.CORSConfig{
 
-		AllowedOrigins:   []string{"*"}, // aceita todos para teste. mudar depois
-		AllowedMethods:   nil,           // default
-		AllowedHeaders:   nil,           // default
-		AllowCredentials: false,
+		AllowedOrigins:   []string{"http://localhost:5173"}, // ajuste para a origem do seu front
+		AllowedMethods:   nil,
+		AllowedHeaders:   []string{"Content-Type", "X-CSRF-Token", "Authorization"},
+		AllowCredentials: true,
 	})
 
 	http.ListenAndServe(":8080", cors(routes))

@@ -28,8 +28,14 @@ func RequireAuth(auth *service.AuthService) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token := extractBearer(r.Header.Get("Authorization"))
 			if token == "" {
-				httpjson.Unauthorized(w, "TOKEN_MISSING", "token ausente")
-				return
+				// tenta via cookie httpOnly
+				if c, err := r.Cookie("auth"); err == nil {
+					token = strings.TrimSpace(c.Value)
+				}
+				if token == "" {
+					httpjson.Unauthorized(w, "TOKEN_MISSING", "token ausente")
+					return
+				}
 			}
 			claims, err := auth.ValidateToken(r.Context(), token)
 			if err != nil {
