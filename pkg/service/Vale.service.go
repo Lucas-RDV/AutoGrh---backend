@@ -33,7 +33,7 @@ func NewValeService(repo ValeRepository, auth *AuthService, logRepo LogRepositor
 }
 
 func (s *ValeService) CriarVale(ctx context.Context, claims Claims, funcionarioID int64, valor float64, data time.Time) (*entity.Vale, error) {
-	if err := s.auth.Authorize(ctx, claims, "vale:create"); err != nil {
+	if err := s.auth.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 
@@ -61,14 +61,14 @@ func (s *ValeService) CriarVale(ctx context.Context, claims Claims, funcionarioI
 }
 
 func (s *ValeService) GetVale(ctx context.Context, claims Claims, id int64) (*entity.Vale, error) {
-	if err := s.auth.Authorize(ctx, claims, "vale:read"); err != nil {
+	if err := s.auth.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	return s.repo.GetByID(id)
 }
 
 func (s *ValeService) ListarVales(ctx context.Context, claims Claims) ([]entity.Vale, error) {
-	if err := s.auth.Authorize(ctx, claims, "vale:list"); err != nil {
+	if err := s.auth.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	pendentes, err := s.repo.ListPendentes()
@@ -83,21 +83,21 @@ func (s *ValeService) ListarVales(ctx context.Context, claims Claims) ([]entity.
 }
 
 func (s *ValeService) ListarValesFuncionario(ctx context.Context, claims Claims, funcionarioID int64) ([]entity.Vale, error) {
-	if err := s.auth.Authorize(ctx, claims, "vale:list"); err != nil {
+	if err := s.auth.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	return s.repo.GetValesByFuncionarioID(funcionarioID)
 }
 
 func (s *ValeService) ListarValesPendentes(ctx context.Context, claims Claims) ([]entity.Vale, error) {
-	if err := s.auth.Authorize(ctx, claims, "vale:list"); err != nil {
+	if err := s.auth.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	return s.repo.ListPendentes()
 }
 
 func (s *ValeService) ListarValesAprovadosNaoPagos(ctx context.Context, claims Claims) ([]entity.Vale, error) {
-	if err := s.auth.Authorize(ctx, claims, "vale:list"); err != nil {
+	if err := s.auth.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	return s.repo.ListAprovadosNaoPagos()

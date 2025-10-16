@@ -159,3 +159,30 @@ func (c *FaltaController) ListAllFaltas(w http.ResponseWriter, r *http.Request) 
 
 	httpjson.WriteJSON(w, http.StatusOK, lista)
 }
+
+func (c *FaltaController) UpsertMensal(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	funcionarioID, _ := strconv.ParseInt(idStr, 10, 64)
+
+	var q struct {
+		Mes        int `json:"mes"`
+		Ano        int `json:"ano"`
+		Quantidade int `json:"quantidade"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&q); err != nil {
+		httpjson.BadRequest(w, "JSON inválido")
+		return
+	}
+
+	claims, ok := middleware.GetClaims(r.Context())
+	if !ok {
+		httpjson.Unauthorized(w, "UNAUTHORIZED", "não autenticado")
+		return
+	}
+
+	if err := c.faltaService.UpsertMensal(r.Context(), claims, funcionarioID, q.Mes, q.Ano, q.Quantidade); err != nil {
+		httpjson.Internal(w, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusNoContent) // sem corpo
+}

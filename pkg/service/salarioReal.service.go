@@ -33,7 +33,7 @@ func NewSalarioRealService(auth *AuthService, logRepo LogRepository, repo Salari
 
 // CriarSalarioReal encerra o salário atual (se houver) e insere um novo
 func (s *SalarioRealService) CriarSalarioReal(ctx context.Context, claims Claims, funcionarioID int64, valor float64) (*entity.SalarioReal, error) {
-	if err := s.authService.Authorize(ctx, claims, "salarioReal:create"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 
@@ -70,7 +70,7 @@ func (s *SalarioRealService) CriarSalarioReal(ctx context.Context, claims Claims
 
 // GetSalarioRealAtual retorna o salário real atual de um funcionário
 func (s *SalarioRealService) GetSalarioRealAtual(ctx context.Context, claims Claims, funcionarioID int64) (*entity.SalarioReal, error) {
-	if err := s.authService.Authorize(ctx, claims, "salario_real:list"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	return s.repo.GetAtual(funcionarioID)
@@ -78,7 +78,7 @@ func (s *SalarioRealService) GetSalarioRealAtual(ctx context.Context, claims Cla
 
 // ListSalariosReais retorna o histórico de salários reais de um funcionário
 func (s *SalarioRealService) ListSalariosReais(ctx context.Context, claims Claims, funcionarioID int64) ([]*entity.SalarioReal, error) {
-	if err := s.authService.Authorize(ctx, claims, "salario_real:list"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	return s.repo.GetByFuncionarioID(funcionarioID)

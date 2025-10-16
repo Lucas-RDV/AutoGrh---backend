@@ -285,3 +285,51 @@ func ConsumirDiasFerias(feriasID int64, dias int) error {
 	}
 	return nil
 }
+
+// Retorna os períodos NÃO pagos com saldo (dias > 0), ordenados do mais antigo
+func GetFeriasNaoPagasComSaldo(funcionarioID int64) ([]*entity.Ferias, error) {
+	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor, pago, terco, tercoPago
+	          FROM ferias
+			  WHERE funcionarioID = ? AND pago = FALSE AND dias > 0
+			  ORDER BY inicio ASC`
+
+	rows, err := DB.Query(query, funcionarioID)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao buscar férias com saldo: %w", err)
+	}
+	defer rows.Close()
+
+	var lista []*entity.Ferias
+	for rows.Next() {
+		var f entity.Ferias
+		var inicioStr, vencStr string
+		if err := rows.Scan(&f.ID, &f.FuncionarioID, &f.Dias, &inicioStr, &vencStr,
+			&f.Vencido, &f.Valor, &f.Pago, &f.Terco, &f.TercoPago); err != nil {
+			return nil, fmt.Errorf("erro ao ler férias: %w", err)
+		}
+		if f.Inicio, err = dateStringToTime.DateStringToTime(inicioStr); err != nil {
+			return nil, fmt.Errorf("erro ao converter início: %w", err)
+		}
+		if f.Vencimento, err = dateStringToTime.DateStringToTime(vencStr); err != nil {
+			return nil, fmt.Errorf("erro ao converter vencimento: %w", err)
+		}
+		lista = append(lista, &f)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar férias: %w", err)
+	}
+	return lista, nil
+}
+
+// Soma o saldo (dias) de todos os períodos NÃO pagos
+func SumSaldoFeriasNaoPagas(funcionarioID int64) (int, error) {
+	query := `SELECT COALESCE(SUM(dias),0)
+	          FROM ferias
+			  WHERE funcionarioID = ? AND pago = FALSE AND dias > 0`
+	row := DB.QueryRow(query, funcionarioID)
+	var total int
+	if err := row.Scan(&total); err != nil {
+		return 0, fmt.Errorf("erro ao somar saldo de férias: %w", err)
+	}
+	return total, nil
+}

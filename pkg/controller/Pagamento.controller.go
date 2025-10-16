@@ -126,3 +126,28 @@ func (c *PagamentoController) MarcarComoPago(w http.ResponseWriter, r *http.Requ
 
 	httpjson.WriteJSON(w, http.StatusOK, map[string]string{"message": "Pagamento marcado como pago"})
 }
+
+func (c *PagamentoController) ListarPagamentosDaFolha(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	folhaID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || folhaID <= 0 {
+		httpjson.BadRequest(w, "folhaID inválido")
+		return
+	}
+
+	claims, ok := mw.GetClaims(r.Context())
+	if !ok {
+		httpjson.Unauthorized(w, "UNAUTHORIZED", "não autenticado")
+		return
+	}
+
+	rows, err := c.pagamentoService.ListarPagamentosDaFolha(r.Context(), claims, folhaID)
+	if err != nil {
+		// segue o padrão atual do controller (erros genéricos como 500)
+		httpjson.Internal(w, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(rows)
+}

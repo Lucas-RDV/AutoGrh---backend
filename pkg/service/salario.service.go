@@ -32,7 +32,7 @@ func NewSalarioService(auth *AuthService, logRepo LogRepository, repo SalarioRep
 
 // CriarSalario encerra o salário atual (se houver) e insere um novo
 func (s *SalarioService) CriarSalario(ctx context.Context, claims Claims, funcionarioID int64, valor float64) (*entity.Salario, error) {
-	if err := s.authService.Authorize(ctx, claims, "salario:create"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 
@@ -69,7 +69,7 @@ func (s *SalarioService) CriarSalario(ctx context.Context, claims Claims, funcio
 
 // ListSalarios retorna todos os salários registrados de um funcionário
 func (s *SalarioService) ListSalarios(ctx context.Context, claims Claims, funcionarioID int64) ([]*entity.Salario, error) {
-	if err := s.authService.Authorize(ctx, claims, "salario:list"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	return s.repo.GetSalariosByFuncionarioID(funcionarioID)
@@ -77,7 +77,7 @@ func (s *SalarioService) ListSalarios(ctx context.Context, claims Claims, funcio
 
 // AtualizarSalario altera dados de um salário registrado existente
 func (s *SalarioService) AtualizarSalario(ctx context.Context, claims Claims, sEntity *entity.Salario) error {
-	if err := s.authService.Authorize(ctx, claims, "salario:update"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return err
 	}
 	if err := s.repo.Update(sEntity); err != nil {

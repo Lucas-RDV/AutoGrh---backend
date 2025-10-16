@@ -125,11 +125,12 @@ func ListAllFaltas() ([]*entity.Falta, error) {
 
 // GetTotalFaltasByFuncionarioMesAno retorna o total de faltas de um funcionário em um mês/ano específico
 func GetTotalFaltasByFuncionarioMesAno(funcionarioID int64, mes int, ano int) (int, error) {
-	query := `SELECT COUNT(*) 
-			  FROM falta 
-			  WHERE funcionarioID = ? 
-			    AND MONTH(data) = ? 
-			    AND YEAR(data) = ?`
+	query := `
+SELECT COALESCE(SUM(quantidade),0)
+FROM falta
+WHERE funcionarioID = ?
+  AND MONTH(data) = ?
+  AND YEAR(data)  = ?`
 
 	row := DB.QueryRow(query, funcionarioID, mes, ano)
 
@@ -140,4 +141,39 @@ func GetTotalFaltasByFuncionarioMesAno(funcionarioID int64, mes int, ano int) (i
 	}
 
 	return total, nil
+}
+
+func SetFaltasMensais(funcionarioID int64, mes int, ano int, quantidade int) error {
+	if quantidade < 0 {
+		quantidade = 0
+	}
+
+	// 1) Tenta atualizar a linha do mês/ano
+	res, err := DB.Exec(`
+		UPDATE falta
+		   SET quantidade = ?
+		 WHERE funcionarioID = ?
+		   AND MONTH(data)   = ?
+		   AND YEAR(data)    = ?`,
+		quantidade, funcionarioID, mes, ano,
+	)
+	if err != nil {
+		return fmt.Errorf("erro ao atualizar faltas mensais: %w", err)
+	}
+
+	// 2) Se não havia linha para esse mês/ano e quantidade > 0, insere
+	rows, _ := res.RowsAffected()
+	if rows == 0 && quantidade > 0 {
+		primeiroDia := fmt.Sprintf("%04d-%02d-01", ano, mes)
+		if _, err := DB.Exec(`
+			INSERT INTO falta (funcionarioID, quantidade, data)
+			VALUES (?, ?, ?)`,
+			funcionarioID, quantidade, primeiroDia,
+		); err != nil {
+			return fmt.Errorf("erro ao inserir faltas mensais: %w", err)
+		}
+	}
+
+	// se rows==0 e quantidade==0, não cria linha "vazia" — está ok
+	return nil
 }

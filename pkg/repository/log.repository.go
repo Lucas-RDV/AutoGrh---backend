@@ -4,25 +4,111 @@ import (
 	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/utils/dateStringToTime"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
+	"time"
 )
+
+type LogView struct {
+	ID        int64     `json:"id"`
+	UsuarioID int64     `json:"usuario_id"`
+	EventoID  int64     `json:"evento_id"`
+	Evento    string    `json:"evento"`  // nome do evento (tabela 'evento', coluna 'tipo')
+	Message   string    `json:"message"` // vem de l.action
+	Data      time.Time `json:"data"`
+}
+
+func ListAllLogsView(limit int) ([]*LogView, error) {
+	if DB == nil {
+		return nil, errors.New("DB não inicializado")
+	}
+	if limit <= 0 {
+		limit = 200
+	}
+
+	const q = `
+		SELECT
+			l.logID,
+			l.usuarioID,
+			l.eventoID,
+			e.tipo      AS evento_nome,
+			l.action    AS message,
+			l.data
+		FROM log l
+		JOIN evento e ON e.eventoID = l.eventoID
+		ORDER BY l.data DESC, l.logID DESC
+		LIMIT ?
+	`
+
+	rows, err := DB.Query(q, limit)
+	if err != nil {
+		return nil, fmt.Errorf("ListAllLogsView: %w", err)
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("erro ao fechar rows em ListAllLogsView: %v", cerr)
+		}
+	}()
+
+	var out []*LogView
+	for rows.Next() {
+		var lv LogView
+		var dtStr string
+
+		if err := rows.Scan(
+			&lv.ID,
+			&lv.UsuarioID,
+			&lv.EventoID,
+			&lv.Evento,  // e.tipo
+			&lv.Message, // l.action
+			&dtStr,      // l.data como string
+		); err != nil {
+			log.Printf("erro ao ler log (view): %v", err)
+			continue
+		}
+
+		t, err := dateStringToTime.DateStringToTime(dtStr)
+		if err != nil {
+			log.Printf("erro ao converter data do log (view): %v", err)
+			continue
+		}
+		lv.Data = t
+
+		out = append(out, &lv)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar logs (view): %w", err)
+	}
+	return out, nil
+}
 
 // CreateLog cria um novo log no banco
 func CreateLog(l *entity.Log) error {
-	query := `INSERT INTO log (usuarioID, eventoID, data, action) VALUES (?, ?, ?, ?)`
-
-	// l.Data é time.Time; o driver MySQL mapeia para TIMESTAMP corretamente
-	result, err := DB.Exec(query, l.UsuarioID, l.EventoID, l.Data, l.Message)
-	if err != nil {
-		return fmt.Errorf("erro ao inserir log: %w", err)
+	if DB == nil {
+		return errors.New("DB não inicializado")
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return fmt.Errorf("erro ao obter ID do novo log: %w", err)
+	// Normaliza a data para o fuso do servidor (ou um fuso fixo, se preferir)
+	t := l.Data
+	if t.IsZero() {
+		t = time.Now()
 	}
-	l.ID = id
+	// Se quiser cravar o fuso da aplicação:
+	// loc, _ := time.LoadLocation("America/Campo_Grande")
+	// t = t.In(loc)
+	t = t.In(time.Local)
+
+	// Grava como string "YYYY-MM-DD HH:MM:SS" para evitar ambiguidade de driver
+	const layout = "2006-01-02 15:04:05"
+	_, err := DB.Exec(`
+		INSERT INTO log (usuarioID, eventoID, data, action)
+		VALUES (?, ?, ?, ?)`,
+		l.UsuarioID, l.EventoID, t.Format(layout), l.Message,
+	)
+	if err != nil {
+		return fmt.Errorf("CreateLog: %w", err)
+	}
 	return nil
 }
 

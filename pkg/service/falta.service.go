@@ -2,6 +2,7 @@ package service
 
 import (
 	"AutoGRH/pkg/entity"
+	"AutoGRH/pkg/repository"
 	"context"
 	"fmt"
 	"time"
@@ -34,7 +35,7 @@ func NewFaltaService(auth *AuthService, logRepo LogRepository, repo FaltaReposit
 
 // Criar nova falta
 func (s *FaltaService) CreateFalta(ctx context.Context, claims Claims, f *entity.Falta) error {
-	if err := s.authService.Authorize(ctx, claims, "falta:create"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return err
 	}
 
@@ -59,7 +60,7 @@ func (s *FaltaService) CreateFalta(ctx context.Context, claims Claims, f *entity
 
 // Atualizar falta
 func (s *FaltaService) UpdateFalta(ctx context.Context, claims Claims, f *entity.Falta) error {
-	if err := s.authService.Authorize(ctx, claims, "falta:update"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return err
 	}
 
@@ -105,7 +106,7 @@ func (s *FaltaService) DeleteFalta(ctx context.Context, claims Claims, id int64)
 
 // Buscar falta por ID
 func (s *FaltaService) GetFaltaByID(ctx context.Context, claims Claims, id int64) (*entity.Falta, error) {
-	if err := s.authService.Authorize(ctx, claims, "falta:read"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 
@@ -121,7 +122,7 @@ func (s *FaltaService) GetFaltaByID(ctx context.Context, claims Claims, id int64
 
 // Listar todas as faltas de um funcionário
 func (s *FaltaService) GetFaltasByFuncionarioID(ctx context.Context, claims Claims, funcionarioID int64) ([]*entity.Falta, error) {
-	if err := s.authService.Authorize(ctx, claims, "falta:list"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	return s.repo.GetFaltasByFuncionarioID(funcionarioID)
@@ -129,8 +130,30 @@ func (s *FaltaService) GetFaltasByFuncionarioID(ctx context.Context, claims Clai
 
 // Listar todas as faltas
 func (s *FaltaService) ListAllFaltas(ctx context.Context, claims Claims) ([]*entity.Falta, error) {
-	if err := s.authService.Authorize(ctx, claims, "falta:list"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	return s.repo.ListAll()
+}
+
+func (s *FaltaService) UpsertMensal(
+	ctx context.Context,
+	claims Claims,
+	funcionarioID int64,
+	mes int,
+	ano int,
+	quantidade int,
+) error {
+	// (opcional) validação básica igual às demais funções
+	if mes < 1 || mes > 12 || ano < 1900 {
+		return fmt.Errorf("competência inválida")
+	}
+
+	// (opcional) autorização igual às demais funções
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
+		return err
+	}
+
+	// >>> Removido o WithTx. Chamamos direto o repository.
+	return repository.SetFaltasMensais(funcionarioID, mes, ano, quantidade)
 }

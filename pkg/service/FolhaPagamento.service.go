@@ -157,7 +157,7 @@ func (s *FolhaPagamentoService) CriarFolhaVale(ctx context.Context, claims Claim
 // dentro de FolhaPagamento.service.go
 
 func (s *FolhaPagamentoService) RecalcularFolha(ctx context.Context, claims Claims, folhaID int64) error {
-	if err := s.authService.Authorize(ctx, claims, "folha:update"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return err
 	}
 
@@ -308,21 +308,21 @@ func (s *FolhaPagamentoService) FecharFolha(ctx context.Context, claims Claims, 
 }
 
 func (s *FolhaPagamentoService) ListarFolhas(ctx context.Context, claims Claims) ([]entity.FolhaPagamentos, error) {
-	if err := s.authService.Authorize(ctx, claims, "folha:list"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	return s.repo.List()
 }
 
 func (s *FolhaPagamentoService) BuscarFolha(ctx context.Context, claims Claims, folhaID int64) (*entity.FolhaPagamentos, error) {
-	if err := s.authService.Authorize(ctx, claims, "folha:read"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	return s.repo.GetByID(folhaID)
 }
 
 func (s *FolhaPagamentoService) BuscarFolhaPorMesAnoTipo(ctx context.Context, claims Claims, mes, ano int, tipo string) (*entity.FolhaPagamentos, error) {
-	if err := s.authService.Authorize(ctx, claims, "folha:read"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	return s.repo.GetByMesAnoTipo(mes, ano, tipo)
@@ -346,7 +346,7 @@ func (s *FolhaPagamentoService) ExcluirFolha(ctx context.Context, claims Claims,
 
 // RecalcularFolhaVale refaz os pagamentos de uma folha do tipo VALE
 func (s *FolhaPagamentoService) RecalcularFolhaVale(ctx context.Context, claims Claims, folhaID int64) error {
-	if err := s.authService.Authorize(ctx, claims, "folha:update"); err != nil {
+	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return err
 	}
 

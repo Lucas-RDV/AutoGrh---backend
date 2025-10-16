@@ -167,3 +167,87 @@ func (c *FeriasController) GetSaldoFerias(w http.ResponseWriter, r *http.Request
 
 	httpjson.WriteJSON(w, http.StatusOK, saldo)
 }
+
+// POST /funcionarios/{id}/ferias/garantir
+func (c *FeriasController) Garantir(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.GetClaims(r.Context())
+	if !ok {
+		httpjson.Unauthorized(w, "UNAUTHORIZED", "usuário não autenticado")
+		return
+	}
+
+	idStr := chi.URLParam(r, "id")
+	funcID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || funcID <= 0 {
+		httpjson.BadRequest(w, "funcionarioID inválido")
+		return
+	}
+
+	lista, err := c.feriasService.GarantirFeriasAteHoje(r.Context(), claims, funcID)
+	if err != nil {
+		httpjson.Internal(w, err.Error())
+		return
+	}
+
+	httpjson.WriteJSON(w, http.StatusOK, lista)
+}
+
+// PUT /ferias/{id}/pagar
+func (c *FeriasController) MarcarComoPago(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.GetClaims(r.Context())
+	if !ok {
+		httpjson.Unauthorized(w, "UNAUTHORIZED", "usuário não autenticado")
+		return
+	}
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		httpjson.BadRequest(w, "id inválido")
+		return
+	}
+	if err := c.feriasService.MarcarComoPago(r.Context(), claims, id); err != nil {
+		httpjson.Internal(w, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// PUT /ferias/{id}/terco-desmarcar  (admin)
+func (c *FeriasController) DesmarcarTercoPago(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.GetClaims(r.Context())
+	if !ok {
+		httpjson.Unauthorized(w, "UNAUTHORIZED", "usuário não autenticado")
+		return
+	}
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		httpjson.BadRequest(w, "id inválido")
+		return
+	}
+	if err := c.feriasService.DesmarcarTercoPago(r.Context(), claims, id); err != nil {
+		httpjson.Internal(w, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// PUT /ferias/{id}/pago-desmarcar  (admin)
+func (c *FeriasController) DesmarcarPago(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.GetClaims(r.Context())
+	if !ok {
+		httpjson.Unauthorized(w, "UNAUTHORIZED", "usuário não autenticado")
+		return
+	}
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		httpjson.BadRequest(w, "id inválido")
+		return
+	}
+	if err := c.feriasService.DesmarcarPago(r.Context(), claims, id); err != nil {
+		httpjson.Internal(w, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

@@ -10,6 +10,7 @@ type PagamentoRepository interface {
 	GetPagamentoByID(id int64) (*entity.Pagamento, error)
 	Update(p *entity.Pagamento) error
 	ListPagamentosByFuncionarioID(funcionarioID int64) ([]entity.Pagamento, error)
+	GetPagamentosByFolhaID(folhaID int64) ([]entity.Pagamento, error)
 }
 
 type PagamentoService struct {
@@ -28,7 +29,7 @@ func NewPagamentoService(repo PagamentoRepository, auth *AuthService, logRepo Lo
 
 // BuscarPagamento retorna um pagamento específico
 func (s *PagamentoService) BuscarPagamento(ctx context.Context, claims Claims, pagamentoID int64) (*entity.Pagamento, error) {
-	if err := s.auth.Authorize(ctx, claims, "pagamento:read"); err != nil {
+	if err := s.auth.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 
@@ -48,7 +49,7 @@ func (s *PagamentoService) AtualizarPagamento(
 	ctx context.Context, claims Claims, pagamentoID int64,
 	adicional, descontoINSS, salarioFamilia float64,
 ) error {
-	if err := s.auth.Authorize(ctx, claims, "pagamento:update"); err != nil {
+	if err := s.auth.Authorize(ctx, claims, ""); err != nil {
 		return err
 	}
 
@@ -85,7 +86,7 @@ func (s *PagamentoService) AtualizarPagamento(
 
 // ListarPagamentosFuncionario retorna todos os pagamentos de um funcionário
 func (s *PagamentoService) ListarPagamentosFuncionario(ctx context.Context, claims Claims, funcionarioID int64) ([]entity.Pagamento, error) {
-	if err := s.auth.Authorize(ctx, claims, "pagamento:list"); err != nil {
+	if err := s.auth.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
 	return s.repo.ListPagamentosByFuncionarioID(funcionarioID)
@@ -119,4 +120,16 @@ func (s *PagamentoService) MarcarPagamentoComoPago(ctx context.Context, claims C
 	})
 
 	return nil
+}
+
+func (s *PagamentoService) ListarPagamentosDaFolha(ctx context.Context, claims Claims, folhaID int64) ([]entity.Pagamento, error) {
+	if err := s.auth.Authorize(ctx, claims, ""); err != nil {
+		return nil, err
+	}
+
+	rows, err := s.repo.GetPagamentosByFolhaID(folhaID)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao listar pagamentos da folha %d: %w", folhaID, err)
+	}
+	return rows, nil
 }

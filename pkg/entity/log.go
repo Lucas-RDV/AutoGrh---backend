@@ -9,6 +9,7 @@ type Log struct {
 	ID        int64     `json:"id"`
 	UsuarioID int64     `json:"usuario_id"`
 	EventoID  int64     `json:"evento_id"`
+	Evento    string    `json:"evento"`
 	Message   string    `json:"message"`
 	Data      time.Time `json:"data"`
 }

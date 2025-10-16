@@ -3,6 +3,7 @@ package repository
 import (
 	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/utils/dateStringToTime"
+	"AutoGRH/pkg/utils/timeToDateString"
 	"database/sql"
 	"fmt"
 	"log"
@@ -13,7 +14,15 @@ func CreateDescanso(d *entity.Descanso) error {
 	query := `INSERT INTO descanso (feriasID, inicio, fim, valor, pago, aprovado)
               VALUES (?, ?, ?, ?, ?, ?)`
 
-	res, err := DB.Exec(query, d.FeriasID, d.Inicio, d.Fim, d.Valor, d.Pago, d.Aprovado)
+	res, err := DB.Exec(
+		query,
+		d.FeriasID,
+		timeToDateString.TimeToDateString(d.Inicio),
+		timeToDateString.TimeToDateString(d.Fim),
+		d.Valor,
+		d.Pago,
+		d.Aprovado,
+	)
 	if err != nil {
 		return fmt.Errorf("erro ao inserir descanso: %w", err)
 	}
@@ -36,19 +45,18 @@ func GetDescansoByID(id int64) (*entity.Descanso, error) {
 	var d entity.Descanso
 	var inicioStr, fimStr string
 
-	err := row.Scan(&d.ID, &d.FeriasID, &inicioStr, &fimStr, &d.Valor, &d.Pago, &d.Aprovado)
-	if err != nil {
+	if err := row.Scan(&d.ID, &d.FeriasID, &inicioStr, &fimStr, &d.Valor, &d.Pago, &d.Aprovado); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("erro ao buscar descanso: %w", err)
 	}
-	d.Inicio, err = dateStringToTime.DateStringToTime(inicioStr)
-	if err != nil {
+
+	var err error
+	if d.Inicio, err = dateStringToTime.DateStringToTime(inicioStr); err != nil {
 		return nil, fmt.Errorf("erro ao converter data de início: %w", err)
 	}
-	d.Fim, err = dateStringToTime.DateStringToTime(fimStr)
-	if err != nil {
+	if d.Fim, err = dateStringToTime.DateStringToTime(fimStr); err != nil {
 		return nil, fmt.Errorf("erro ao converter data de fim: %w", err)
 	}
 
@@ -75,19 +83,16 @@ func GetDescansosByFeriasID(feriasID int64) ([]*entity.Descanso, error) {
 		var d entity.Descanso
 		var inicioStr, fimStr string
 
-		err := rows.Scan(&d.ID, &d.FeriasID, &inicioStr, &fimStr, &d.Valor, &d.Pago, &d.Aprovado)
-		if err != nil {
+		if err := rows.Scan(&d.ID, &d.FeriasID, &inicioStr, &fimStr, &d.Valor, &d.Pago, &d.Aprovado); err != nil {
 			log.Printf("erro ao ler descanso: %v", err)
 			continue
 		}
 
-		d.Inicio, err = dateStringToTime.DateStringToTime(inicioStr)
-		if err != nil {
+		if d.Inicio, err = dateStringToTime.DateStringToTime(inicioStr); err != nil {
 			log.Printf("erro ao converter data de início: %v", err)
 			continue
 		}
-		d.Fim, err = dateStringToTime.DateStringToTime(fimStr)
-		if err != nil {
+		if d.Fim, err = dateStringToTime.DateStringToTime(fimStr); err != nil {
 			log.Printf("erro ao converter data de fim: %v", err)
 			continue
 		}
@@ -116,19 +121,16 @@ func ListDescansos() ([]*entity.Descanso, error) {
 		var d entity.Descanso
 		var inicioStr, fimStr string
 
-		err := rows.Scan(&d.ID, &d.FeriasID, &inicioStr, &fimStr, &d.Valor, &d.Pago, &d.Aprovado)
-		if err != nil {
+		if err := rows.Scan(&d.ID, &d.FeriasID, &inicioStr, &fimStr, &d.Valor, &d.Pago, &d.Aprovado); err != nil {
 			log.Printf("erro ao ler descanso: %v", err)
 			continue
 		}
 
-		d.Inicio, err = dateStringToTime.DateStringToTime(inicioStr)
-		if err != nil {
+		if d.Inicio, err = dateStringToTime.DateStringToTime(inicioStr); err != nil {
 			log.Printf("erro ao converter data de início: %v", err)
 			continue
 		}
-		d.Fim, err = dateStringToTime.DateStringToTime(fimStr)
-		if err != nil {
+		if d.Fim, err = dateStringToTime.DateStringToTime(fimStr); err != nil {
 			log.Printf("erro ao converter data de fim: %v", err)
 			continue
 		}
@@ -140,21 +142,28 @@ func ListDescansos() ([]*entity.Descanso, error) {
 
 // UpdateDescanso atualiza um descanso
 func UpdateDescanso(d *entity.Descanso) error {
-	query := `UPDATE descanso SET inicio = ?, fim = ?, valor = ?, pago = ?, aprovado = ? 
+	query := `UPDATE descanso SET inicio = ?, fim = ?, valor = ?, pago = ?, aprovado = ?
 	          WHERE descansoID = ?`
 
-	_, err := DB.Exec(query, d.Inicio, d.Fim, d.Valor, d.Pago, d.Aprovado, d.ID)
+	_, err := DB.Exec(
+		query,
+		timeToDateString.TimeToDateString(d.Inicio),
+		timeToDateString.TimeToDateString(d.Fim),
+		d.Valor,
+		d.Pago,
+		d.Aprovado,
+		d.ID,
+	)
 	if err != nil {
 		return fmt.Errorf("erro ao atualizar descanso: %w", err)
 	}
 	return nil
 }
 
-// DeleteDescanso deleta um descanso
+// DeleteDescanso deleta um descanso (hard delete)
 func DeleteDescanso(id int64) error {
 	query := `DELETE FROM descanso WHERE descansoID = ?`
-	_, err := DB.Exec(query, id)
-	if err != nil {
+	if _, err := DB.Exec(query, id); err != nil {
 		return fmt.Errorf("erro ao deletar descanso: %w", err)
 	}
 	return nil
@@ -200,10 +209,10 @@ func GetDescansosAprovados() ([]*entity.Descanso, error) {
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("erro no iterador de descansos aprovados: %w", err)
 	}
-
 	return lista, nil
 }
 
+// GetDescansosPendentes retorna todos os descansos pendentes (a aprovar)
 func GetDescansosPendentes() ([]*entity.Descanso, error) {
 	query := `SELECT descansoID, feriasID, inicio, fim, valor, aprovado, pago
 			  FROM descanso WHERE aprovado = 0`
@@ -243,11 +252,10 @@ func GetDescansosPendentes() ([]*entity.Descanso, error) {
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("erro no iterador de descansos pendentes: %w", err)
 	}
-
 	return lista, nil
 }
 
-// GetDescansosByFuncionarioID retorna todos os descansos de um funcionário (indiretamente via férias)
+// GetDescansosByFuncionarioID retorna todos os descansos de um funcionário (via períodos de férias)
 func GetDescansosByFuncionarioID(funcionarioID int64) ([]*entity.Descanso, error) {
 	query := `SELECT d.descansoID, d.feriasID, d.inicio, d.fim, d.valor, d.pago, d.aprovado
 			  FROM descanso d
@@ -267,10 +275,27 @@ func GetDescansosByFuncionarioID(funcionarioID int64) ([]*entity.Descanso, error
 	var lista []*entity.Descanso
 	for rows.Next() {
 		var d entity.Descanso
-		err := rows.Scan(&d.ID, &d.FeriasID, &d.Inicio, &d.Fim, &d.Valor, &d.Pago, &d.Aprovado)
-		if err != nil {
+		var inicioStr, fimStr string
+
+		if err := rows.Scan(
+			&d.ID,
+			&d.FeriasID,
+			&inicioStr,
+			&fimStr,
+			&d.Valor,
+			&d.Pago,
+			&d.Aprovado,
+		); err != nil {
 			return nil, fmt.Errorf("erro ao ler descanso por funcionário: %w", err)
 		}
+
+		if d.Inicio, err = dateStringToTime.DateStringToTime(inicioStr); err != nil {
+			return nil, fmt.Errorf("erro ao converter inicio: %w", err)
+		}
+		if d.Fim, err = dateStringToTime.DateStringToTime(fimStr); err != nil {
+			return nil, fmt.Errorf("erro ao converter fim: %w", err)
+		}
+
 		lista = append(lista, &d)
 	}
 	return lista, nil
