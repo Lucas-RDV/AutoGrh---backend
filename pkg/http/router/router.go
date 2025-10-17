@@ -23,6 +23,7 @@ func New(
 	valeSvc *service.ValeService,
 	folhaSvc *service.FolhaPagamentoService,
 	pagamentoSvc *service.PagamentoService,
+	avisoSvc *service.AvisoService,
 
 ) http.Handler {
 	r := chi.NewRouter()
@@ -42,6 +43,7 @@ func New(
 	folhaCtl := controller.NewFolhaPagamentoController(folhaSvc)
 	pagamentoCtl := controller.NewPagamentoController(pagamentoSvc)
 	logCtl := controller.NewLogController()
+	avisoCtl := controller.NewAvisoController(avisoSvc)
 
 	// Rota pública
 	r.Post("/auth/login", authCtl.Login)
@@ -58,6 +60,8 @@ func New(
 			w.WriteHeader(http.StatusUnauthorized)
 		})
 	})
+
+	r.With(middleware.RequireAuth(auth)).Get("/avisos", avisoCtl.List)
 
 	r.Route("/admin", func(r chi.Router) {
 		r.With(middleware.RequirePerm(auth, "usuario:list")).Get("/logs", logCtl.List)

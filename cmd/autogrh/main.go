@@ -31,15 +31,16 @@ func main() {
 	valeCtl := Bootstrap.BuildValeService(auth)
 	folhaCtl := Bootstrap.BuildFolhaPagamentoService(auth)
 	pagamentoCtl := Bootstrap.BuildPagamentoService(auth)
+	avisoSvc := Bootstrap.BuildAvisoService(auth)
 
 	// Inicializar workers
-	Bootstrap.InitWorkers(feriasSvc, descansoSvc, salarioRealSvc, funcSvc, faltaSvc, folhaCtl)
+	Bootstrap.InitWorkers(feriasSvc, descansoSvc, salarioRealSvc, funcSvc, faltaSvc, folhaCtl, avisoSvc)
 
-	routes := router.New(auth, pessoaSvc, funcSvc, documentoSvc, faltaSvc, feriasSvc, descansoSvc, salarioSvc, salarioRealSvc, valeCtl, folhaCtl, pagamentoCtl)
+	routes := router.New(auth, pessoaSvc, funcSvc, documentoSvc, faltaSvc, feriasSvc, descansoSvc, salarioSvc, salarioRealSvc, valeCtl, folhaCtl, pagamentoCtl, avisoSvc)
 
 	cors := middleware.NewCORS(middleware.CORSConfig{
 
-		AllowedOrigins:   []string{"http://localhost:5173"}, // ajuste para a origem do seu front
+		AllowedOrigins:   []string{"http://localhost:5173"},
 		AllowedMethods:   nil,
 		AllowedHeaders:   []string{"Content-Type", "X-CSRF-Token", "Authorization"},
 		AllowCredentials: true,

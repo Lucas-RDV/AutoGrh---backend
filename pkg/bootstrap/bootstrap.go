@@ -147,6 +147,7 @@ func InitWorkers(
 	funcionarioSvc *service.FuncionarioService,
 	faltaSvc *service.FaltaService,
 	folhaSvc *service.FolhaPagamentoService,
+	avisoSvc *service.AvisoService,
 ) {
 	feriasWorker := worker.NewFeriasWorker(
 		feriasSvc,
@@ -157,8 +158,11 @@ func InitWorkers(
 	)
 
 	folhaWorker := worker.NewFolhaWorker(folhaSvc)
+	avisosWorker := worker.NewAvisosWorker(avisoSvc)
+
 	folhaWorker.Start()
 	feriasWorker.Start()
+	avisosWorker.Start()
 }
 
 func BuildAuth(app AppConfig) *service.AuthService {
@@ -383,4 +387,8 @@ func BuildPagamentoService(auth *service.AuthService) *service.PagamentoService 
 func BuildPagamentoController(auth *service.AuthService) *controller.PagamentoController {
 	pagamentoSvc := BuildPagamentoService(auth)
 	return controller.NewPagamentoController(pagamentoSvc)
+}
+
+func BuildAvisoService(auth *service.AuthService) *service.AvisoService {
+	return service.NewAvisoService(auth)
 }

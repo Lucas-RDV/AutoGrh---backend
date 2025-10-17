@@ -205,6 +205,16 @@ func createTables() {
 			FOREIGN KEY (usuarioID) REFERENCES usuario(usuarioID),
 			FOREIGN KEY (eventoID) REFERENCES evento(eventoID)
 		);`,
+		`CREATE TABLE IF NOT EXISTS aviso (
+  avisoID       BIGINT AUTO_INCREMENT PRIMARY KEY,
+  tipo          VARCHAR(50)      NOT NULL,
+  mensagem      TEXT             NOT NULL,
+  referenciaID  BIGINT           NULL,
+  criadoEm      DATETIME         NOT NULL,
+  ativo         TINYINT(1)       NOT NULL DEFAULT 1,
+  INDEX idx_aviso_criado (criadoEm),
+  UNIQUE KEY ux_aviso_tipo_ref (tipo, referenciaID)
+);`,
 	}
 
 	for _, query := range tableQueries {

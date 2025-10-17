@@ -231,6 +231,37 @@ func ListTodosFuncionarios() ([]*entity.Funcionario, error) {
 	return lista, nil
 }
 
-//
-// === NOVAS FUNÇÕES AUXILIARES PARA SALÁRIOS ===
-//
+// GetFuncionarioNomeByID retorna o nome (pessoa.nome) dado um funcionarioID.
+func GetFuncionarioNomeByID(funcionarioID int64) (string, error) {
+	const q = `
+		SELECT p.nome
+		FROM funcionario f
+		JOIN pessoa p ON p.pessoaID = f.pessoaID
+		WHERE f.funcionarioID = ?
+		LIMIT 1
+	`
+	row := DB.QueryRow(q, funcionarioID)
+	var nome string
+	if err := row.Scan(&nome); err != nil {
+		return "", err
+	}
+	return nome, nil
+}
+
+// GetFuncionarioNomeByFeriasID retorna o nome do funcionário dono da férias informada.
+func GetFuncionarioNomeByFeriasID(feriasID int64) (string, error) {
+	const q = `
+		SELECT p.nome
+		FROM ferias fe
+		JOIN funcionario f ON f.funcionarioID = fe.funcionario_id
+		JOIN pessoa p ON p.pessoaID = f.pessoaID
+		WHERE fe.feriasID = ?
+		LIMIT 1
+	`
+	row := DB.QueryRow(q, feriasID)
+	var nome string
+	if err := row.Scan(&nome); err != nil {
+		return "", err
+	}
+	return nome, nil
+}
