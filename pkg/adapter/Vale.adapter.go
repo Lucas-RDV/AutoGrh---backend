@@ -13,6 +13,7 @@ type ValeRepositoryAdapter struct {
 	delete                func(id int64) error
 	listPendentes         func() ([]entity.Vale, error)
 	listAprovadosNaoPagos func() ([]entity.Vale, error)
+	listAll               func() ([]entity.Vale, error)
 }
 
 // Construtor
@@ -25,6 +26,7 @@ func NewValeRepositoryAdapter(
 	delete func(id int64) error,
 	listPendentes func() ([]entity.Vale, error),
 	listAprovadosNaoPagos func() ([]entity.Vale, error),
+	listAll func() ([]entity.Vale, error),
 ) *ValeRepositoryAdapter {
 	return &ValeRepositoryAdapter{
 		create:                create,
@@ -35,6 +37,7 @@ func NewValeRepositoryAdapter(
 		delete:                delete,
 		listPendentes:         listPendentes,
 		listAprovadosNaoPagos: listAprovadosNaoPagos,
+		listAll:               listAll,
 	}
 }
 
@@ -69,4 +72,8 @@ func (a *ValeRepositoryAdapter) ListPendentes() ([]entity.Vale, error) {
 
 func (a *ValeRepositoryAdapter) ListAprovadosNaoPagos() ([]entity.Vale, error) {
 	return a.listAprovadosNaoPagos()
+}
+
+func (a *ValeRepositoryAdapter) ListAll() ([]entity.Vale, error) {
+	return a.listAll()
 }

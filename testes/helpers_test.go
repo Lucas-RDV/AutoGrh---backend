@@ -24,11 +24,37 @@ var tables = []string{
 }
 
 func truncateAll() error {
-	for _, t := range tables {
-		if _, err := repository.DB.Exec(fmt.Sprintf("DELETE FROM %s", t)); err != nil {
-			return fmt.Errorf("truncate %s: %w", t, err)
+	if repository.DB == nil {
+		return fmt.Errorf("DB nil")
+	}
+
+	stmts := []string{
+		"SET FOREIGN_KEY_CHECKS = 0",
+
+		// Filhas primeiro:
+		"TRUNCATE TABLE descanso",
+		"TRUNCATE TABLE falta",
+		"TRUNCATE TABLE documento",
+		"TRUNCATE TABLE salario_real",
+		"TRUNCATE TABLE salario",
+		"TRUNCATE TABLE pagamento",
+		"TRUNCATE TABLE folha_pagamento",
+		"TRUNCATE TABLE vale", // se existir
+
+		// Depois as pais:
+		"TRUNCATE TABLE ferias",
+		"TRUNCATE TABLE funcionario",
+		"TRUNCATE TABLE pessoa",
+		"TRUNCATE TABLE usuario",
+		"TRUNCATE TABLE log", // seu log/auditoria, se usado
+
+		"SET FOREIGN_KEY_CHECKS = 1",
+	}
+
+	for _, s := range stmts {
+		if _, err := repository.DB.Exec(s); err != nil {
+			return fmt.Errorf("truncateAll step %q: %w", s, err)
 		}
-		_, _ = repository.DB.Exec(fmt.Sprintf("ALTER TABLE %s AUTO_INCREMENT = 1", t))
 	}
 	return nil
 }

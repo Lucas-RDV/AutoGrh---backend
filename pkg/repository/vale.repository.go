@@ -244,3 +244,38 @@ func MarcarTodosValesComoPagos() error {
 	}
 	return nil
 }
+
+// ListAllVales retorna todos os vales ATIVOS (pendentes, aprovados pagos e não pagos)
+func ListAllVales() ([]entity.Vale, error) {
+	query := `SELECT valeID, funcionarioID, valor, data, aprovado, pago, ativo
+			  FROM vale
+			  WHERE ativo = TRUE
+      ORDER BY data DESC, valeID DESC`
+
+	rows, err := DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao listar vales: %w", err)
+	}
+	defer rows.Close()
+
+	var vales []entity.Vale
+	for rows.Next() {
+		var v entity.Vale
+		var dataStr string
+		if err := rows.Scan(&v.ID, &v.FuncionarioID, &v.Valor, &dataStr, &v.Aprovado, &v.Pago, &v.Ativo); err != nil {
+			log.Printf("erro ao ler vale (all): %v", err)
+			continue
+		}
+		t, err := dateStringToTime.DateStringToTime(dataStr)
+		if err != nil {
+			log.Printf("erro ao converter data do vale (all): %v", err)
+			continue
+		}
+		v.Data = t
+		vales = append(vales, v)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("erro ao iterar vales (all): %w", err)
+	}
+	return vales, nil
+}

@@ -16,6 +16,7 @@ type ValeRepository interface {
 	Delete(id int64) error
 	ListPendentes() ([]entity.Vale, error)
 	ListAprovadosNaoPagos() ([]entity.Vale, error)
+	ListAll() ([]entity.Vale, error)
 }
 
 type ValeService struct {
@@ -71,15 +72,7 @@ func (s *ValeService) ListarVales(ctx context.Context, claims Claims) ([]entity.
 	if err := s.auth.Authorize(ctx, claims, ""); err != nil {
 		return nil, err
 	}
-	pendentes, err := s.repo.ListPendentes()
-	if err != nil {
-		return nil, err
-	}
-	aprovadosNaoPagos, err := s.repo.ListAprovadosNaoPagos()
-	if err != nil {
-		return nil, err
-	}
-	return append(pendentes, aprovadosNaoPagos...), nil
+	return s.repo.ListAll()
 }
 
 func (s *ValeService) ListarValesFuncionario(ctx context.Context, claims Claims, funcionarioID int64) ([]entity.Vale, error) {

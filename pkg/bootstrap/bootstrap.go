@@ -336,6 +336,7 @@ func BuildValeService(auth *service.AuthService) *service.ValeService {
 		repository.DeleteVale,
 		repository.ListValesPendentes,
 		repository.ListValesAprovadosNaoPagos,
+		repository.ListAllVales,
 	)
 	return service.NewValeService(valeRepo, auth, logRepo)
 }
