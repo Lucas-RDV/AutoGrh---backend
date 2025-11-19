@@ -217,5 +217,14 @@ func New(
 		r.With(middleware.RequireAuth(auth)).Get("/", pagamentoCtl.ListarPagamentosFuncionario)
 	})
 
+	// Frontend buildado pelo Vite em /app
+	fileServer := http.StripPrefix("/app/", http.FileServer(http.Dir("./dist")))
+	r.Handle("/app/*", fileServer)
+
+	// acessar só / redireciona para /app/
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/app/", http.StatusFound)
+	})
+
 	return r
 }
