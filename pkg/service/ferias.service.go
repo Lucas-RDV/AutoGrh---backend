@@ -5,6 +5,7 @@ import (
 	"AutoGRH/pkg/repository"
 	"context"
 	"fmt"
+	"sort"
 	"time"
 )
 
@@ -210,6 +211,31 @@ func truncateDate(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }
 
+func (s *FeriasService) aplicarDebitoDePeriodosPagos(ctx context.Context, debitos []*entity.Ferias, diasNovos int) (int, error) {
+	if diasNovos <= 0 || len(debitos) == 0 {
+		return diasNovos, nil
+	}
+	for _, f := range debitos {
+		if diasNovos <= 0 {
+			break
+		}
+		if f == nil || f.Dias >= 0 {
+			continue
+		}
+		debito := -f.Dias
+		abatido := debito
+		if abatido > diasNovos {
+			abatido = diasNovos
+		}
+		f.Dias += abatido
+		diasNovos -= abatido
+		if err := s.repo.Update(ctx, f); err != nil {
+			return 0, fmt.Errorf("erro ao transferir débito de férias pagas id=%d: %w", f.ID, err)
+		}
+	}
+	return diasNovos, nil
+}
+
 // Corrigida: cria períodos anuais com Início = início da CONCESSÃO (A+12m) e Vencimento = Início+12m
 func (s *FeriasService) GarantirFeriasAteHoje(ctx context.Context, claims Claims, funcionarioID int64) ([]*entity.Ferias, error) {
 	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
@@ -234,6 +260,15 @@ func (s *FeriasService) GarantirFeriasAteHoje(ctx context.Context, claims Claims
 	for _, f := range existentes {
 		byConcessao[f.Inicio.Format("2006-01-02")] = f
 	}
+
+	// Débitos de períodos já pagos devem abater os próximos períodos gerados.
+	debitosPagos := make([]*entity.Ferias, 0)
+	for _, f := range existentes {
+		if f != nil && f.Pago && f.Dias < 0 {
+			debitosPagos = append(debitosPagos, f)
+		}
+	}
+	sort.Slice(debitosPagos, func(i, j int) bool { return debitosPagos[i].Inicio.Before(debitosPagos[j].Inicio) })
 
 	// Salário real atual para valorar férias
 	salarioReal, err := repository.GetSalarioRealAtual(funcionarioID)
@@ -284,6 +319,12 @@ func (s *FeriasService) GarantirFeriasAteHoje(ctx context.Context, claims Claims
 			dias = 24
 		default:
 			dias = 30
+		}
+
+		if len(debitosPagos) > 0 && dias > 0 {
+			if dias, err = s.aplicarDebitoDePeriodosPagos(ctx, debitosPagos, dias); err != nil {
+				return nil, err
+			}
 		}
 
 		// CONCESSÃO = fim da aquisição; VENCIMENTO = concessão + 12m
@@ -351,6 +392,10 @@ func (s *FeriasService) MarcarComoPago(ctx context.Context, claims Claims, id in
 		return fmt.Errorf("férias não encontradas")
 	}
 	f.Pago = true
+	if f.Dias > 0 {
+		// Período pago é considerado encerrado/utilizado; não deve carregar saldo positivo.
+		f.Dias = 0
+	}
 	if !f.TercoPago {
 		f.TercoPago = true
 	}
