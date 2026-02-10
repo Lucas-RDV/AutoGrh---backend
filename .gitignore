@@ -27,3 +27,4 @@ go.work.sum
 keep.txt
 /pkg.zip
 /back.zip
+dist/
