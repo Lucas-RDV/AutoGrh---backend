@@ -179,25 +179,21 @@ func (s *FeriasService) CalcularSaldo(ctx context.Context, claims Claims, f *ent
 	}
 
 	//  Buscar salário real atual do funcionário
-	salarioReal, err := repository.GetSalarioRealAtual(f.FuncionarioID)
-	if err != nil {
-		return nil, fmt.Errorf("erro ao buscar salário real atual: %w", err)
+	//  Calcular saldo a partir do saldo persistido (f.Dias), que pode ser negativo
+	diasRestantes := f.Dias
+	diasReferencia := 30
+	if f.Terco > 0 && f.Valor > 0 {
+		if est := int((10.0 * f.Valor / f.Terco) + 0.5); est > 0 {
+			diasReferencia = est
+		}
 	}
-	if salarioReal == nil {
-		return nil, fmt.Errorf("nenhum salário real encontrado para funcionarioID=%d", f.FuncionarioID)
-	}
-
-	//  Calcular saldo
-	diasRestantes := f.DiasRestantes()
-	valorDias := (salarioReal.Valor / 30.0) * float64(diasRestantes)
-	terco := f.Terco
-
-	var total float64
+	valorBasePorDia := f.Valor / float64(diasReferencia)
+	valorDias := valorBasePorDia * float64(diasRestantes)
+	terco := 0.0
 	if !f.TercoPago {
-		total = valorDias + terco
-	} else {
-		total = valorDias
+		terco = f.Terco
 	}
+	total := valorDias + terco
 
 	dto := &SaldoFeriasDTO{
 		DiasRestantes: diasRestantes,
