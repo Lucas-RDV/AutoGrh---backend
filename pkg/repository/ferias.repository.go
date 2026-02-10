@@ -321,11 +321,11 @@ func GetFeriasNaoPagasComSaldo(funcionarioID int64) ([]*entity.Ferias, error) {
 	return lista, nil
 }
 
-// Soma o saldo líquido (dias) de todos os períodos NÃO pagos
+// Soma o saldo líquido (dias) considerando períodos em aberto e dívidas de períodos já pagos
 func SumSaldoFeriasNaoPagas(funcionarioID int64) (int, error) {
 	query := `SELECT COALESCE(SUM(dias),0)
 	          FROM ferias
-			  WHERE funcionarioID = ? AND pago = FALSE`
+			  WHERE funcionarioID = ? AND (pago = FALSE OR dias < 0)`
 	row := DB.QueryRow(query, funcionarioID)
 	var total int
 	if err := row.Scan(&total); err != nil {

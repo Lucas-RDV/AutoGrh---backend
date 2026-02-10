@@ -45,6 +45,72 @@ func diasReferenciaFerias(f *entity.Ferias) int {
 	return 30
 }
 
+func (s *DescansoService) consumirDiasDescansoUnico(feriasBaseID int64, dias int) error {
+	if dias <= 0 {
+		return nil
+	}
+	feriasBase, err := repository.GetFeriasByID(feriasBaseID)
+	if err != nil {
+		return fmt.Errorf("erro ao buscar férias base: %w", err)
+	}
+	if feriasBase == nil {
+		return fmt.Errorf("férias base não encontradas")
+	}
+
+	periodos, err := repository.GetFeriasNaoPagasComSaldo(feriasBase.FuncionarioID)
+	if err != nil {
+		return fmt.Errorf("erro ao listar períodos de férias: %w", err)
+	}
+	if len(periodos) == 0 {
+		return fmt.Errorf("não há períodos de férias em aberto")
+	}
+
+	inicio := -1
+	for i, f := range periodos {
+		if f != nil && f.ID == feriasBaseID {
+			inicio = i
+			break
+		}
+	}
+	if inicio < 0 {
+		return fmt.Errorf("férias base id=%d não está em aberto para consumo", feriasBaseID)
+	}
+
+	restantes := dias
+	for i := inicio; i < len(periodos) && restantes > 0; i++ {
+		f := periodos[i]
+		if f == nil || f.Pago || f.Dias <= 0 {
+			continue
+		}
+		consome := f.Dias
+		if consome > restantes {
+			consome = restantes
+		}
+		if err := repository.ConsumirDiasFerias(f.ID, consome); err != nil {
+			return fmt.Errorf("erro ao consumir dias de férias id=%d: %w", f.ID, err)
+		}
+		restantes -= consome
+	}
+
+	if restantes > 0 {
+		var alvo *entity.Ferias
+		for i := len(periodos) - 1; i >= 0; i-- {
+			if periodos[i] != nil && !periodos[i].Pago {
+				alvo = periodos[i]
+				break
+			}
+		}
+		if alvo == nil {
+			return fmt.Errorf("não há período de férias válido para lançar saldo negativo")
+		}
+		if err := repository.ConsumirDiasFerias(alvo.ID, restantes); err != nil {
+			return fmt.Errorf("erro ao lançar saldo negativo de férias: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (s *DescansoService) CreateDescanso(ctx context.Context, claims Claims, d *entity.Descanso) error {
 	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return err
@@ -108,9 +174,9 @@ func (s *DescansoService) AprovarDescanso(ctx context.Context, claims Claims, id
 		return fmt.Errorf("erro ao aprovar descanso: %w", err)
 	}
 
-	// **consome** os dias do período associado
-	if err := repository.ConsumirDiasFerias(descanso.FeriasID, descanso.DuracaoEmDias()); err != nil {
-		return fmt.Errorf("erro ao consumir dias de férias: %w", err)
+	// Consome os dias mantendo a solicitação única, distribuindo por períodos quando necessário.
+	if err := s.consumirDiasDescansoUnico(descanso.FeriasID, descanso.DuracaoEmDias()); err != nil {
+		return err
 	}
 
 	_, _ = s.logRepo.Create(ctx, LogEntry{
@@ -218,7 +284,7 @@ func (s *DescansoService) DeleteDescanso(ctx context.Context, claims Claims, id 
 	return nil
 }
 
-// FIFO split em múltiplos períodos; valida saldo total antes
+// Cria uma única solicitação de descanso; o consumo dos dias ocorre apenas na aprovação.
 func (s *DescansoService) CreateDescansoAuto(ctx context.Context, claims Claims, funcionarioID int64, inicio, fim time.Time) error {
 	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return err
@@ -230,90 +296,47 @@ func (s *DescansoService) CreateDescansoAuto(ctx context.Context, claims Claims,
 	if totalDias <= 0 {
 		return fmt.Errorf("duração do descanso inválida")
 	}
+
 	periodos, err := repository.GetFeriasNaoPagasComSaldo(funcionarioID)
 	if err != nil {
 		return fmt.Errorf("erro ao listar períodos de férias: %w", err)
 	}
 	if len(periodos) == 0 {
-		return fmt.Errorf("não há períodos disponíveis para consumo")
+		return fmt.Errorf("não há períodos disponíveis para solicitação")
 	}
 
-	restantes := totalDias
-	cursorData := inicio
-
+	base := periodos[0]
 	for _, f := range periodos {
-		if restantes <= 0 {
+		if f != nil && !f.Pago && f.Dias > 0 {
+			base = f
 			break
 		}
-		if f.Pago || f.Dias <= 0 {
-			continue
-		}
-		consome := f.Dias
-		if consome > restantes {
-			consome = restantes
-		}
-
-		diasRef := diasReferenciaFerias(f)
-		valorBaseDia := f.Valor / float64(diasRef)
-		tercoDia := f.Terco / float64(diasRef)
-
-		parcInicio := cursorData
-		parcFim := parcInicio.Add(time.Duration(consome-1) * 24 * time.Hour)
-
-		d := &entity.Descanso{
-			FeriasID: f.ID,
-			Inicio:   parcInicio,
-			Fim:      parcFim,
-			Valor:    (valorBaseDia + tercoDia) * float64(consome),
-			Aprovado: false,
-			Pago:     false,
-		}
-		if err := s.repo.Create(d); err != nil {
-			return fmt.Errorf("erro ao criar descanso (parte): %w", err)
-		}
-		if err := repository.ConsumirDiasFerias(f.ID, consome); err != nil {
-			return fmt.Errorf("erro ao consumir dias do período de férias: %w", err)
-		}
-		restantes -= consome
-		cursorData = parcFim.Add(24 * time.Hour)
-
-		_, _ = s.logRepo.Create(ctx, LogEntry{
-			EventoID:  3,
-			UsuarioID: &claims.UserID,
-			Quando:    time.Now(),
-			Detalhe:   fmt.Sprintf("Descanso(part) criado ID=%d FeriasID=%d Dias=%d", d.ID, f.ID, consome),
-		})
 	}
-	if restantes > 0 {
-		ultimoPeriodo := periodos[len(periodos)-1]
-		diasRef := diasReferenciaFerias(ultimoPeriodo)
-		valorBaseDia := ultimoPeriodo.Valor / float64(diasRef)
-		tercoDia := ultimoPeriodo.Terco / float64(diasRef)
-
-		parcInicio := cursorData
-		parcFim := parcInicio.Add(time.Duration(restantes-1) * 24 * time.Hour)
-
-		d := &entity.Descanso{
-			FeriasID: ultimoPeriodo.ID,
-			Inicio:   parcInicio,
-			Fim:      parcFim,
-			Valor:    (valorBaseDia + tercoDia) * float64(restantes),
-			Aprovado: false,
-			Pago:     false,
-		}
-		if err := s.repo.Create(d); err != nil {
-			return fmt.Errorf("erro ao criar descanso (saldo negativo): %w", err)
-		}
-		if err := repository.ConsumirDiasFerias(ultimoPeriodo.ID, restantes); err != nil {
-			return fmt.Errorf("erro ao consumir dias em saldo negativo: %w", err)
-		}
-
-		_, _ = s.logRepo.Create(ctx, LogEntry{
-			EventoID:  3,
-			UsuarioID: &claims.UserID,
-			Quando:    time.Now(),
-			Detalhe:   fmt.Sprintf("Descanso(saldo-negativo) criado ID=%d FeriasID=%d Dias=%d", d.ID, ultimoPeriodo.ID, restantes),
-		})
+	if base == nil || base.Pago {
+		return fmt.Errorf("não foi possível definir período base para a solicitação")
 	}
+
+	diasRef := diasReferenciaFerias(base)
+	valorBaseDia := base.Valor / float64(diasRef)
+	tercoDia := base.Terco / float64(diasRef)
+
+	d := &entity.Descanso{
+		FeriasID: base.ID,
+		Inicio:   inicio,
+		Fim:      fim,
+		Valor:    (valorBaseDia + tercoDia) * float64(totalDias),
+		Aprovado: false,
+		Pago:     false,
+	}
+	if err := s.repo.Create(d); err != nil {
+		return fmt.Errorf("erro ao criar solicitação de descanso: %w", err)
+	}
+
+	_, _ = s.logRepo.Create(ctx, LogEntry{
+		EventoID:  3,
+		UsuarioID: &claims.UserID,
+		Quando:    time.Now(),
+		Detalhe:   fmt.Sprintf("Descanso único criado ID=%d FeriasBaseID=%d Dias=%d", d.ID, base.ID, totalDias),
+	})
 	return nil
 }
