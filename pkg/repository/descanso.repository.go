@@ -300,3 +300,27 @@ func GetDescansosByFuncionarioID(funcionarioID int64) ([]*entity.Descanso, error
 	}
 	return lista, nil
 }
+
+// MarcarDescansoComoAprovadoSePendente faz a transição pendente->aprovado de forma atômica.
+// Retorna true quando houve transição; false quando já estava aprovado (ou inexistente).
+func MarcarDescansoComoAprovadoSePendente(id int64) (bool, error) {
+	query := `UPDATE descanso SET aprovado = 1 WHERE descansoID = ? AND aprovado = 0`
+	res, err := DB.Exec(query, id)
+	if err != nil {
+		return false, fmt.Errorf("erro ao marcar descanso como aprovado: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("erro ao verificar atualização de aprovação do descanso: %w", err)
+	}
+	return affected > 0, nil
+}
+
+// ReverterAprovacaoDescanso reverte a aprovação para pendente (uso compensatório em falhas de consumo).
+func ReverterAprovacaoDescanso(id int64) error {
+	query := `UPDATE descanso SET aprovado = 0 WHERE descansoID = ?`
+	if _, err := DB.Exec(query, id); err != nil {
+		return fmt.Errorf("erro ao reverter aprovação do descanso: %w", err)
+	}
+	return nil
+}
