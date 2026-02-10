@@ -168,7 +168,12 @@ func (s *DescansoService) AprovarDescanso(ctx context.Context, claims Claims, id
 	if descanso.Aprovado {
 		return fmt.Errorf("descanso já está aprovado")
 	}
-	// aprova
+	// Consome os dias mantendo a solicitação única, distribuindo por períodos quando necessário.
+	if err := s.consumirDiasDescansoUnico(descanso.FeriasID, descanso.DuracaoEmDias()); err != nil {
+		return err
+	}
+
+	// Aprova somente após consumo bem sucedido, evitando descanso aprovado sem débito de saldo.
 	descanso.Aprovado = true
 	if err := s.repo.Update(descanso); err != nil {
 		return fmt.Errorf("erro ao aprovar descanso: %w", err)
