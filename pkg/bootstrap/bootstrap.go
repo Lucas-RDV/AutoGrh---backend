@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"AutoGRH/pkg/Adapter"
+	"AutoGRH/pkg/adapter"
 	"AutoGRH/pkg/entity"
 	"AutoGRH/pkg/repository"
 	"AutoGRH/pkg/service"
