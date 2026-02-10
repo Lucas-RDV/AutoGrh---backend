@@ -6,8 +6,8 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"AutoGRH/pkg/Bootstrap"
-	"AutoGRH/pkg/HTTP/router"
+	"AutoGRH/pkg/bootstrap"
+	"AutoGRH/pkg/http/router"
 	middleware "AutoGRH/pkg/controller/middleware"
 )
 

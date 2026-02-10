@@ -278,19 +278,19 @@ func MarcarFeriasComoPagas(feriasID int64) error {
 
 // ConsumirDiasFerias subtrai uma quantidade de dias de férias
 func ConsumirDiasFerias(feriasID int64, dias int) error {
-	query := `UPDATE ferias SET dias = dias - ? WHERE feriasID = ? AND dias >= ?`
-	_, err := DB.Exec(query, dias, feriasID, dias)
+	query := `UPDATE ferias SET dias = dias - ? WHERE feriasID = ?`
+	_, err := DB.Exec(query, dias, feriasID)
 	if err != nil {
 		return fmt.Errorf("erro ao consumir dias de férias: %w", err)
 	}
 	return nil
 }
 
-// Retorna os períodos NÃO pagos com saldo (dias > 0), ordenados do mais antigo
+// Retorna os períodos NÃO pagos (inclui saldos negativos), ordenados do mais antigo
 func GetFeriasNaoPagasComSaldo(funcionarioID int64) ([]*entity.Ferias, error) {
 	query := `SELECT feriasID, funcionarioID, dias, inicio, vencimento, vencido, valor, pago, terco, tercoPago
 	          FROM ferias
-			  WHERE funcionarioID = ? AND pago = FALSE AND dias > 0
+			  WHERE funcionarioID = ? AND pago = FALSE
 			  ORDER BY inicio ASC`
 
 	rows, err := DB.Query(query, funcionarioID)
@@ -321,11 +321,11 @@ func GetFeriasNaoPagasComSaldo(funcionarioID int64) ([]*entity.Ferias, error) {
 	return lista, nil
 }
 
-// Soma o saldo (dias) de todos os períodos NÃO pagos
+// Soma o saldo líquido (dias) considerando períodos em aberto e dívidas de períodos já pagos
 func SumSaldoFeriasNaoPagas(funcionarioID int64) (int, error) {
 	query := `SELECT COALESCE(SUM(dias),0)
 	          FROM ferias
-			  WHERE funcionarioID = ? AND pago = FALSE AND dias > 0`
+			  WHERE funcionarioID = ? AND (pago = FALSE OR dias < 0)`
 	row := DB.QueryRow(query, funcionarioID)
 	var total int
 	if err := row.Scan(&total); err != nil {
