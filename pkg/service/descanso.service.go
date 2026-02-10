@@ -29,6 +29,22 @@ func NewDescansoService(auth *AuthService, logRepo LogRepository, repo DescansoR
 	return &DescansoService{authService: auth, logRepo: logRepo, repo: repo}
 }
 
+func diasReferenciaFerias(f *entity.Ferias) int {
+	if f == nil {
+		return 30
+	}
+	if f.Terco > 0 && f.Valor > 0 {
+		dias := int((10.0 * f.Valor / f.Terco) + 0.5)
+		if dias > 0 {
+			return dias
+		}
+	}
+	if f.Dias > 0 {
+		return f.Dias
+	}
+	return 30
+}
+
 func (s *DescansoService) CreateDescanso(ctx context.Context, claims Claims, d *entity.Descanso) error {
 	if err := s.authService.Authorize(ctx, claims, ""); err != nil {
 		return err
@@ -43,22 +59,15 @@ func (s *DescansoService) CreateDescanso(ctx context.Context, claims Claims, d *
 	if ferias == nil {
 		return fmt.Errorf("férias não encontradas para ID=%d", d.FeriasID)
 	}
-	if ferias.DiasRestantes() < d.DuracaoEmDias() {
-		return fmt.Errorf("não há dias de férias suficientes para este descanso")
-	}
-
 	diasDescanso := d.DuracaoEmDias()
 	if diasDescanso <= 0 {
 		return fmt.Errorf("duração do descanso inválida")
 	}
-	if ferias.Dias <= 0 {
-		return fmt.Errorf("férias com dias inválidos (Dias=%d)", ferias.Dias)
-	}
-
-	valorBasePorDia := ferias.Valor / float64(ferias.Dias)
+	diasRef := diasReferenciaFerias(ferias)
+	valorBasePorDia := ferias.Valor / float64(diasRef)
 	var tercoPorDia float64
 	if ferias.Terco > 0 {
-		tercoPorDia = ferias.Terco / float64(ferias.Dias)
+		tercoPorDia = ferias.Terco / float64(diasRef)
 	} else {
 		tercoPorDia = valorBasePorDia / 3.0
 	}
@@ -221,14 +230,6 @@ func (s *DescansoService) CreateDescansoAuto(ctx context.Context, claims Claims,
 	if totalDias <= 0 {
 		return fmt.Errorf("duração do descanso inválida")
 	}
-
-	saldoTotal, err := repository.SumSaldoFeriasNaoPagas(funcionarioID)
-	if err != nil {
-		return fmt.Errorf("erro ao calcular saldo total de férias: %w", err)
-	}
-	if totalDias > saldoTotal {
-		return fmt.Errorf("não há saldo suficiente de férias (solicitado=%d, saldo=%d)", totalDias, saldoTotal)
-	}
 	periodos, err := repository.GetFeriasNaoPagasComSaldo(funcionarioID)
 	if err != nil {
 		return fmt.Errorf("erro ao listar períodos de férias: %w", err)
@@ -244,7 +245,7 @@ func (s *DescansoService) CreateDescansoAuto(ctx context.Context, claims Claims,
 		if restantes <= 0 {
 			break
 		}
-		if f.Dias <= 0 || f.Pago {
+		if f.Pago || f.Dias <= 0 {
 			continue
 		}
 		consome := f.Dias
@@ -252,11 +253,9 @@ func (s *DescansoService) CreateDescansoAuto(ctx context.Context, claims Claims,
 			consome = restantes
 		}
 
-		if f.Dias <= 0 {
-			return fmt.Errorf("período de férias com dias inválidos (id=%d)", f.ID)
-		}
-		valorBaseDia := f.Valor / float64(f.Dias)
-		tercoDia := f.Terco / float64(f.Dias)
+		diasRef := diasReferenciaFerias(f)
+		valorBaseDia := f.Valor / float64(diasRef)
+		tercoDia := f.Terco / float64(diasRef)
 
 		parcInicio := cursorData
 		parcFim := parcInicio.Add(time.Duration(consome-1) * 24 * time.Hour)
@@ -286,7 +285,35 @@ func (s *DescansoService) CreateDescansoAuto(ctx context.Context, claims Claims,
 		})
 	}
 	if restantes > 0 {
-		return fmt.Errorf("saldo insuficiente durante a alocação (faltaram %d dias)", restantes)
+		ultimoPeriodo := periodos[len(periodos)-1]
+		diasRef := diasReferenciaFerias(ultimoPeriodo)
+		valorBaseDia := ultimoPeriodo.Valor / float64(diasRef)
+		tercoDia := ultimoPeriodo.Terco / float64(diasRef)
+
+		parcInicio := cursorData
+		parcFim := parcInicio.Add(time.Duration(restantes-1) * 24 * time.Hour)
+
+		d := &entity.Descanso{
+			FeriasID: ultimoPeriodo.ID,
+			Inicio:   parcInicio,
+			Fim:      parcFim,
+			Valor:    (valorBaseDia + tercoDia) * float64(restantes),
+			Aprovado: false,
+			Pago:     false,
+		}
+		if err := s.repo.Create(d); err != nil {
+			return fmt.Errorf("erro ao criar descanso (saldo negativo): %w", err)
+		}
+		if err := repository.ConsumirDiasFerias(ultimoPeriodo.ID, restantes); err != nil {
+			return fmt.Errorf("erro ao consumir dias em saldo negativo: %w", err)
+		}
+
+		_, _ = s.logRepo.Create(ctx, LogEntry{
+			EventoID:  3,
+			UsuarioID: &claims.UserID,
+			Quando:    time.Now(),
+			Detalhe:   fmt.Sprintf("Descanso(saldo-negativo) criado ID=%d FeriasID=%d Dias=%d", d.ID, ultimoPeriodo.ID, restantes),
+		})
 	}
 	return nil
 }
