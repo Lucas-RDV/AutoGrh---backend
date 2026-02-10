@@ -5,6 +5,7 @@ import (
 	"AutoGRH/pkg/repository"
 	"context"
 	"fmt"
+	"sort"
 	"time"
 )
 
@@ -179,25 +180,21 @@ func (s *FeriasService) CalcularSaldo(ctx context.Context, claims Claims, f *ent
 	}
 
 	//  Buscar salário real atual do funcionário
-	salarioReal, err := repository.GetSalarioRealAtual(f.FuncionarioID)
-	if err != nil {
-		return nil, fmt.Errorf("erro ao buscar salário real atual: %w", err)
+	//  Calcular saldo a partir do saldo persistido (f.Dias), que pode ser negativo
+	diasRestantes := f.Dias
+	diasReferencia := 30
+	if f.Terco > 0 && f.Valor > 0 {
+		if est := int((10.0 * f.Valor / f.Terco) + 0.5); est > 0 {
+			diasReferencia = est
+		}
 	}
-	if salarioReal == nil {
-		return nil, fmt.Errorf("nenhum salário real encontrado para funcionarioID=%d", f.FuncionarioID)
-	}
-
-	//  Calcular saldo
-	diasRestantes := f.DiasRestantes()
-	valorDias := (salarioReal.Valor / 30.0) * float64(diasRestantes)
-	terco := f.Terco
-
-	var total float64
+	valorBasePorDia := f.Valor / float64(diasReferencia)
+	valorDias := valorBasePorDia * float64(diasRestantes)
+	terco := 0.0
 	if !f.TercoPago {
-		total = valorDias + terco
-	} else {
-		total = valorDias
+		terco = f.Terco
 	}
+	total := valorDias + terco
 
 	dto := &SaldoFeriasDTO{
 		DiasRestantes: diasRestantes,
@@ -212,6 +209,31 @@ func (s *FeriasService) CalcularSaldo(ctx context.Context, claims Claims, f *ent
 // helper: zera hora/min/seg/nano (já existe no arquivo, mantenha)
 func truncateDate(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
+func (s *FeriasService) aplicarDebitoDePeriodosPagos(ctx context.Context, debitos []*entity.Ferias, diasNovos int) (int, error) {
+	if diasNovos <= 0 || len(debitos) == 0 {
+		return diasNovos, nil
+	}
+	for _, f := range debitos {
+		if diasNovos <= 0 {
+			break
+		}
+		if f == nil || f.Dias >= 0 {
+			continue
+		}
+		debito := -f.Dias
+		abatido := debito
+		if abatido > diasNovos {
+			abatido = diasNovos
+		}
+		f.Dias += abatido
+		diasNovos -= abatido
+		if err := s.repo.Update(ctx, f); err != nil {
+			return 0, fmt.Errorf("erro ao transferir débito de férias pagas id=%d: %w", f.ID, err)
+		}
+	}
+	return diasNovos, nil
 }
 
 // Corrigida: cria períodos anuais com Início = início da CONCESSÃO (A+12m) e Vencimento = Início+12m
@@ -238,6 +260,15 @@ func (s *FeriasService) GarantirFeriasAteHoje(ctx context.Context, claims Claims
 	for _, f := range existentes {
 		byConcessao[f.Inicio.Format("2006-01-02")] = f
 	}
+
+	// Débitos de períodos já pagos devem abater os próximos períodos gerados.
+	debitosPagos := make([]*entity.Ferias, 0)
+	for _, f := range existentes {
+		if f != nil && f.Pago && f.Dias < 0 {
+			debitosPagos = append(debitosPagos, f)
+		}
+	}
+	sort.Slice(debitosPagos, func(i, j int) bool { return debitosPagos[i].Inicio.Before(debitosPagos[j].Inicio) })
 
 	// Salário real atual para valorar férias
 	salarioReal, err := repository.GetSalarioRealAtual(funcionarioID)
@@ -288,6 +319,12 @@ func (s *FeriasService) GarantirFeriasAteHoje(ctx context.Context, claims Claims
 			dias = 24
 		default:
 			dias = 30
+		}
+
+		if len(debitosPagos) > 0 && dias > 0 {
+			if dias, err = s.aplicarDebitoDePeriodosPagos(ctx, debitosPagos, dias); err != nil {
+				return nil, err
+			}
 		}
 
 		// CONCESSÃO = fim da aquisição; VENCIMENTO = concessão + 12m
@@ -355,6 +392,10 @@ func (s *FeriasService) MarcarComoPago(ctx context.Context, claims Claims, id in
 		return fmt.Errorf("férias não encontradas")
 	}
 	f.Pago = true
+	if f.Dias > 0 {
+		// Período pago é considerado encerrado/utilizado; não deve carregar saldo positivo.
+		f.Dias = 0
+	}
 	if !f.TercoPago {
 		f.TercoPago = true
 	}
