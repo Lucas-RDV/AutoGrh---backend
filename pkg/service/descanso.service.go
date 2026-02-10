@@ -73,8 +73,7 @@ func (s *DescansoService) consumirDiasDescansoUnico(feriasBaseID int64, dias int
 		}
 	}
 	if inicio < 0 {
-		// Se o período base já foi fechado/pago, continua o consumo a partir do primeiro período em aberto.
-		inicio = 0
+		return fmt.Errorf("férias base id=%d não está em aberto para consumo", feriasBaseID)
 	}
 
 	restantes := dias
@@ -178,6 +177,11 @@ func (s *DescansoService) AprovarDescanso(ctx context.Context, claims Claims, id
 	descanso.Aprovado = true
 	if err := s.repo.Update(descanso); err != nil {
 		return fmt.Errorf("erro ao aprovar descanso: %w", err)
+	}
+
+	// Consome os dias mantendo a solicitação única, distribuindo por períodos quando necessário.
+	if err := s.consumirDiasDescansoUnico(descanso.FeriasID, descanso.DuracaoEmDias()); err != nil {
+		return err
 	}
 
 	_, _ = s.logRepo.Create(ctx, LogEntry{
